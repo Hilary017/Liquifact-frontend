@@ -1,6 +1,9 @@
 use soroban_sdk::{Env, Symbol, symbol_short, IntoVal};
 use soroban_sdk::testutils::{Address as _, Ledger, LedgerInfo};
-use crate::{TimeLockedUpgradeContract, TimeLockedUpgradeContractClient, UPGRADE_DELAY_SECONDS, DEFAULT_HEARTBEAT_INTERVAL};
+use crate::{
+    ContractError, TimeLockedUpgradeContract, TimeLockedUpgradeContractClient,
+    DEFAULT_HEARTBEAT_INTERVAL, UPGRADE_DELAY_SECONDS,
+};
 
 /// Helper: advance the ledger timestamp by `delta` seconds.
 fn advance_ledger_timestamp(env: &Env, delta: u64) {
@@ -366,4 +369,47 @@ fn test_set_value_updates_heartbeat() {
     // Another set_value call refreshes the heartbeat
     client.set_value(&100, &admin);
     assert!(client.is_data_fresh(&value_asset));
+}
+
+#[test]
+fn test_initialize_twice_returns_typed_error() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register_contract(None, TimeLockedUpgradeContract);
+    let client = TimeLockedUpgradeContractClient::new(&env, &contract_id);
+
+    let admin = soroban_sdk::Address::generate(&env);
+    client.initialize(&admin);
+
+    let result = client.try_initialize(&admin);
+    assert_eq!(result, Err(Ok(ContractError::AlreadyInitialized)));
+}
+
+#[test]
+fn test_unauthorized_set_value_returns_typed_error() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register_contract(None, TimeLockedUpgradeContract);
+    let client = TimeLockedUpgradeContractClient::new(&env, &contract_id);
+
+    let admin = soroban_sdk::Address::generate(&env);
+    let unauthorized = soroban_sdk::Address::generate(&env);
+    client.initialize(&admin);
+
+    let result = client.try_set_value(&42, &unauthorized);
+    assert_eq!(result, Err(Ok(ContractError::NotAdmin)));
+}
+
+#[test]
+fn test_zero_heartbeat_interval_returns_typed_error() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register_contract(None, TimeLockedUpgradeContract);
+    let client = TimeLockedUpgradeContractClient::new(&env, &contract_id);
+
+    let admin = soroban_sdk::Address::generate(&env);
+    client.initialize(&admin);
+
+    let result = client.try_set_heartbeat_interval(&0, &admin);
+    assert_eq!(result, Err(Ok(ContractError::InvalidHeartbeatInterval)));
 }

@@ -343,6 +343,32 @@ pub enum Error {
     ContractDestroyed = 20,
     /// Delegate assignment is invalid.
     InvalidDelegate = 21,
+    /// No admin has been configured for this contract.
+    AdminNotSet = 22,
+    /// No pending admin transfer exists.
+    PendingAdminNotFound = 23,
+    /// Pending admin transfer timestamp is missing.
+    PendingAdminTimestampMissing = 24,
+    /// Caller is not the pending admin for the active transfer.
+    NotPendingAdmin = 25,
+    /// Admin transfer timelock has not expired yet.
+    AdminTimelockNotExpired = 26,
+    /// Contract is in emergency freeze state.
+    ContractFrozen = 27,
+    /// Caller is not the configured Community Council.
+    CouncilRequired = 28,
+    /// Caller is not a whitelisted price provider.
+    ProviderNotAuthorized = 29,
+    /// Price floor configuration is invalid.
+    InvalidPriceFloor = 30,
+    /// Price bounds configuration is invalid.
+    InvalidPriceBounds = 31,
+    /// Maximum deviation basis points configuration is invalid.
+    InvalidMaxDeviation = 32,
+    /// Normalized or aggregated price failed internal validation.
+    InvalidNormalizedPrice = 33,
+    /// Price normalization overflowed or divided by zero.
+    PriceMathOverflow = 34,
 }
 
 #[contract]
@@ -870,7 +896,9 @@ impl PriceOracle {
 
     /// Return the current admin addresses.
     pub fn get_admin(env: Env) -> Address {
-        crate::auth::_get_admin(&env).get(0).expect("No admin set")
+        crate::auth::_get_admin(&env)
+            .get(0)
+            .unwrap_or_else(|| panic_with_error!(&env, Error::AdminNotSet))
     }
 
     /// Returns true if the supplied address is one of the admin addresses.
@@ -904,22 +932,22 @@ impl PriceOracle {
             .storage()
             .instance()
             .get(&DataKey::PendingAdmin)
-            .expect("No pending admin");
+            .unwrap_or_else(|| panic_with_error!(&env, Error::PendingAdminNotFound));
 
         if pending != new_admin {
-            panic!("Not pending admin");
+            panic_with_error!(&env, Error::NotPendingAdmin);
         }
 
         let timestamp: u64 = env
             .storage()
             .instance()
             .get(&DataKey::PendingAdminTimestamp)
-            .expect("No pending admin timestamp");
+            .unwrap_or_else(|| panic_with_error!(&env, Error::PendingAdminTimestampMissing));
 
         let now = env.ledger().timestamp();
 
         if now < timestamp.saturating_add(ADMIN_TIMELOCK) {
-            panic!("Timelock not expired");
+            panic_with_error!(&env, Error::AdminTimelockNotExpired);
         }
 
         //_log_admin_action(&env, &new_admin, AdminAction::TransferAdminAccepted, None);
@@ -1154,13 +1182,9 @@ impl PriceOracle {
             // Normalize the raw price to 9 fixed-point decimals on entry.
             let normalized = Self::normalize_price(&env, &asset, val);
 
-            // INVARIANT: normalization must never produce a non-positive price.
-            // A positive raw input scaled by a positive power of 10 must remain
-            // positive. If this fires, the normalization logic has a bug.
-            assert!(
-                normalized > 0,
-                "invariant violated: normalized price must be > 0"
-            );
+            if normalized <= 0 {
+                return Err(Error::InvalidNormalizedPrice);
+            }
 
             if let Err(err) = enforce_price_floor(&env, &asset, normalized) {
                 return Err(err);
@@ -1276,13 +1300,9 @@ impl PriceOracle {
         // Normalize the raw price to 9 fixed-point decimals on entry.
         let normalized = Self::normalize_price(&env, &asset, price);
 
-        // INVARIANT: normalization must never produce a non-positive price.
-        // A positive raw input scaled by a positive power of 10 must remain
-        // positive. If this fires, the normalization logic has a bug.
-        assert!(
-            normalized > 0,
-            "invariant violated: normalized price must be > 0"
-        );
+        if normalized <= 0 {
+            return Err(Error::InvalidNormalizedPrice);
+        }
 
         let now = env.ledger().timestamp();
         let price_data = PriceData {
@@ -1443,13 +1463,9 @@ impl PriceOracle {
         // Normalize the raw price to 9 fixed-point decimals on entry.
         let normalized = Self::normalize_price(&env, &asset, price);
 
-        // INVARIANT: normalization must never produce a non-positive price.
-        // A positive raw input scaled by a positive power of 10 must remain
-        // positive. If this fires, the normalization logic has a bug.
-        assert!(
-            normalized > 0,
-            "invariant violated: normalized price must be > 0"
-        );
+        if normalized <= 0 {
+            return Err(Error::InvalidNormalizedPrice);
+        }
 
         // Get the current buffer for this asset
         let mut buffer = get_price_buffer(&env, asset.clone());
@@ -1527,12 +1543,9 @@ impl PriceOracle {
         // Calculate the new median and store it as the canonical price
         let median_price = calculate_median_from_buffer(&env, &buffer).unwrap_or(normalized);
 
-        // INVARIANT: the median of a set of positive prices must itself be
-        // positive. If this fires, the median aggregation logic has a bug.
-        assert!(
-            median_price > 0,
-            "invariant violated: median_price must be > 0"
-        );
+        if median_price <= 0 {
+            return Err(Error::InvalidNormalizedPrice);
+        }
 
         // Also update the legacy PriceData for backward compatibility
         let mut prices: soroban_sdk::Map<Symbol, PriceData> = storage
@@ -1583,13 +1596,14 @@ impl PriceOracle {
         admin.require_auth();
         crate::auth::_require_authorized(&env, &admin);
 
-        assert!(price_floor > 0, "price_floor must be positive");
+        if price_floor <= 0 {
+            panic_with_error!(&env, Error::InvalidPriceFloor);
+        }
 
         if let Some(bounds) = Self::get_price_bounds(env.clone(), asset.clone()) {
-            assert!(
-                price_floor <= bounds.max_price,
-                "price_floor must be <= max_price"
-            );
+            if price_floor > bounds.max_price {
+                panic_with_error!(&env, Error::InvalidPriceFloor);
+            }
         }
 
         // Composite key: write directly to the per-asset slot.
@@ -1616,10 +1630,13 @@ impl PriceOracle {
         admin.require_auth();
         crate::auth::_require_authorized(&env, &admin);
 
-        assert!(min_price > 0 && max_price > 0, "bounds must be positive");
-        assert!(min_price <= max_price, "min_price must be <= max_price");
+        if min_price <= 0 || max_price <= 0 || min_price > max_price {
+            panic_with_error!(&env, Error::InvalidPriceBounds);
+        }
         if let Some(price_floor) = read_price_floor(&env, &asset) {
-            assert!(price_floor <= max_price, "price_floor must be <= max_price");
+            if price_floor > max_price {
+                panic_with_error!(&env, Error::InvalidPriceBounds);
+            }
         }
 
         // Composite key: write directly to the per-asset slot — no map load needed.
@@ -1645,11 +1662,9 @@ impl PriceOracle {
         admin.require_auth();
         crate::auth::_require_authorized(&env, &admin);
 
-        assert!(max_deviation_bps > 0, "max_deviation_bps must be positive");
-        assert!(
-            max_deviation_bps <= 10_000,
-            "max_deviation_bps must be <= 10000"
-        );
+        if max_deviation_bps <= 0 || max_deviation_bps > 10_000 {
+            panic_with_error!(&env, Error::InvalidMaxDeviation);
+        }
 
         env.storage()
             .persistent()
