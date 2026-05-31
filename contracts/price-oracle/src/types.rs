@@ -84,7 +84,7 @@ pub enum DataKey {
     ProviderLastSeenLedger(Address),
     /// The SEP-41 token contract address used for staking and slashing.
     SlashToken,
-    /// The address of the ecosystem insurance reserve that receives slashed funds.
+    /// The address of the insurance reserve that receives slashed funds.
     InsuranceReserve,
     /// The ledger sequence number when the oracle last resumed from a halt.
     /// Used to ignore tracking metrics (TWAP, RecentEvents) from before the recovery.
