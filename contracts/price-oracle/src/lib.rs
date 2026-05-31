@@ -685,6 +685,17 @@ fn has_provider_submitted(buffer: &PriceBuffer, provider: &Address) -> bool {
         .any(|entry| entry.provider == *provider)
 }
 
+/// Ensure the current ledger sequence has advanced since the last price write.
+fn require_ledger_sequence_advanced(env: &Env, previous: Option<&PriceData>) -> Result<u32, Error> {
+    let current_ledger: u32 = env.ledger().sequence().into();
+    if let Some(prev) = previous {
+        if current_ledger <= prev.ledger_sequence {
+            return Err(Error::DuplicatePriceWriteInSameLedger);
+        }
+    }
+    Ok(current_ledger)
+}
+
 /// Truncate buffer entries to MAX_MEDIAN_ENTRIES, keeping highest-weight providers.
 /// This prevents CPU budget exhaustion during high-volatility spikes when many
 /// providers submit prices simultaneously.
@@ -987,6 +998,7 @@ impl PriceOracle {
                 &PriceData {
                     price: 0,
                     timestamp: env.ledger().timestamp(),
+                    ledger_sequence: env.ledger().sequence().into(),
                     provider: env.current_contract_address(),
                     decimals: 0,
                     confidence_score: 0,
@@ -1407,9 +1419,11 @@ impl PriceOracle {
             let now = env.ledger().timestamp();
 
             if let Some(mut current) = existing {
+                let current_ledger = require_ledger_sequence_advanced(&env, Some(&current))?;
                 if current.price == val {
                     // Price unchanged — only refresh the timestamp (zero-write optimisation).
                     current.timestamp = now;
+                    current.ledger_sequence = current_ledger;
                     storage.set(&key, &current);
                     update_twap(&env, asset.clone(), val, now);
                     env.events().publish_event(&PriceUpdatedEvent {
@@ -1424,6 +1438,7 @@ impl PriceOracle {
             let price_data = PriceData {
                 price: normalized,
                 timestamp: now,
+                ledger_sequence: env.ledger().sequence().into(),
                 provider: env.current_contract_address(),
                 // All stored prices are 9-decimal normalized.
                 decimals: 9,
@@ -1511,10 +1526,17 @@ impl PriceOracle {
             return Err(Error::InvalidNormalizedPrice);
         }
 
+        let previous_price: Option<PriceData> = env
+            .storage()
+            .persistent()
+            .get(&DataKey::CommunityPrice(asset.clone()));
+        require_ledger_sequence_advanced(&env, previous_price.as_ref())?;
+
         let now = env.ledger().timestamp();
         let price_data = PriceData {
             price: normalized,
             timestamp: now,
+            ledger_sequence: env.ledger().sequence().into(),
             provider: source,
             // All stored prices are 9-decimal normalized.
             decimals: 9,
@@ -1687,8 +1709,10 @@ impl PriceOracle {
         }
         let storage = env.storage().persistent();
         let key = DataKey::VerifiedPrice(asset.clone());
-        let old_price: i128 = storage
-            .get::<DataKey, PriceData>(&key)
+        let existing_price: Option<PriceData> = storage.get(&key);
+        require_ledger_sequence_advanced(&env, existing_price.as_ref())?;
+        let old_price: i128 = existing_price
+            .as_ref()
             .map(|pd| pd.price)
             .unwrap_or(0);
 
@@ -1766,6 +1790,7 @@ impl PriceOracle {
         let price_data = PriceData {
             price: median_price,
             timestamp: env.ledger().timestamp(),
+            ledger_sequence: env.ledger().sequence().into(),
             provider: source.clone(),
             // All stored prices are 9-decimal normalized.
             decimals: 9,
