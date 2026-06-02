@@ -111,6 +111,11 @@ Skeleton placeholder for invoice list while loading.
 **Props:**
 - `rows` (number, default `5`): Number of placeholder rows.
 
+### Invest Marketplace
+The `/invest` page uses a polite live region to announce when the skeleton resolves:
+- loaded: `N investable invoices loaded`
+- empty: `No invoices available`
+
 ### WalletStatus
 Shows connection status of Stellar wallet.
 **Props:**

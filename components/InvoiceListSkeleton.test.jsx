@@ -26,7 +26,7 @@ describe("InvoiceListSkeleton", () => {
     const { container } = render(<InvoiceListSkeleton />);
     expect(
       container.querySelector("ul").getAttribute("aria-label")
-    ).toBe("Loading invoices");
+    ).toBe("Loading investable invoices");
   });
 
   it("each row has animate-pulse class", () => {

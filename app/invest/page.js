@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import ErrorBanner from "@/components/ErrorBanner";
 import InvoiceListSkeleton from "@/components/InvoiceListSkeleton";
+import { copy } from "../copy/en";
 
 /**
  * Mock invoice data — replace with real API call once the backend endpoint
@@ -44,13 +46,59 @@ const MOCK_INVOICES = [
 // DEV-only delay (ms) to make the skeleton visible during local development.
 const DEV_DELAY = process.env.NODE_ENV === "development" ? 1500 : 0;
 
-export default function InvestPage() {
+function loadMockInvoices() {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(MOCK_INVOICES), DEV_DELAY);
+  });
+}
+
+export function getInvoiceLoadAnnouncement(invoices) {
+  if (!Array.isArray(invoices) || invoices.length === 0) {
+    return "No invoices available";
+  }
+
+  return `${invoices.length} investable invoices loaded`;
+}
+
+export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
   const [invoices, setInvoices] = useState(null); // null = loading
+  const [statusMessage, setStatusMessage] = useState("");
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
-    const timer = setTimeout(() => setInvoices(MOCK_INVOICES), DEV_DELAY);
-    return () => clearTimeout(timer);
-  }, []);
+    let isActive = true;
+
+    const announceLoadCompletion = async () => {
+      try {
+        const nextInvoices = await loadInvoices();
+
+        if (!isActive) {
+          return;
+        }
+
+        const normalizedInvoices = Array.isArray(nextInvoices)
+          ? nextInvoices
+          : [];
+
+        setInvoices(normalizedInvoices);
+        setStatusMessage(getInvoiceLoadAnnouncement(normalizedInvoices));
+      } catch {
+        if (!isActive) {
+          return;
+        }
+
+        setInvoices([]);
+        setLoadError("Unable to load investable invoices right now.");
+        setStatusMessage("Unable to load investable invoices.");
+      }
+    };
+
+    void announceLoadCompletion();
+
+    return () => {
+      isActive = false;
+    };
+  }, [loadInvoices]);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -64,9 +112,13 @@ export default function InvestPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-6 py-12">
-        <h1 className="text-2xl font-bold mb-2">Invest</h1>
+        <h1 className="text-2xl font-bold mb-2">{copy.invest.title}</h1>
         <p className="text-slate-400 mb-8">
-          Browse tokenized invoices and fund them. Estimated yield is shown for educational purposes; actual payment is received at invoice maturity.
+          {copy.invest.subtext}
+        </p>
+
+        <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+          {statusMessage}
         </p>
 
         {/* Filter Controls - Disabled with Coming Soon Indicators */}
@@ -161,11 +213,18 @@ export default function InvestPage() {
           </div>
         </div>
 
-        {invoices === null ? (
+        {loadError ? (
+          <ErrorBanner
+            variant="error"
+            title="Unable to load investable invoices"
+            description={loadError}
+            previewLabel="Marketplace status"
+          />
+        ) : invoices === null ? (
           <InvoiceListSkeleton rows={3} />
         ) : invoices.length === 0 ? (
           <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-8 text-center text-slate-300">
-            No investable invoices. Connect wallet to see the marketplace.
+            {copy.invest.emptyState}
           </div>
         ) : (
           <>
@@ -201,4 +260,8 @@ export default function InvestPage() {
       </main>
     </div>
   );
+}
+
+export default function InvestPage() {
+  return <InvestMarketplace />;
 }

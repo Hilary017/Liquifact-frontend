@@ -9,7 +9,11 @@
  */
 export default function InvoiceListSkeleton({ rows = 3 }) {
   return (
-    <ul aria-label="Loading invoices" aria-busy="true" className="space-y-4">
+    <ul
+      aria-label="Loading investable invoices"
+      aria-busy="true"
+      className="space-y-4"
+    >
       {Array.from({ length: rows }).map((_, i) => (
         <li
           key={i}
