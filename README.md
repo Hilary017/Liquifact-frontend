@@ -93,6 +93,42 @@ Keep both passing before opening a PR.
 7. Wait for CI and address review feedback.
 
 We welcome UI improvements, new pages (e.g. invoice upload, marketplace), and Stellar wallet integration aligned with the LiquiFact product.
+## UI Components
+
+### Footer
+Provides the site footer with navigation links.
+**Props:** none.
+
+### ErrorBanner
+Displays an error message with variant styling.
+**Props:**
+- `variant` (string): `"default"` | `"warning"` | `"error"` – determines color.
+- `message` (string): The error text.
+
+### InvoiceListSkeleton
+Skeleton placeholder for invoice list while loading.
+**Props:**
+- `rows` (number, default `5`): Number of placeholder rows.
+
+### WalletStatus
+Shows connection status of Stellar wallet.
+**Props:**
+- `status` (`'connected' | 'disconnected' | 'loading'`)
+
+## Design Tokens
+
+- **Colors**
+  - `--color-bg`: `#0f0f0f` (slate‑950)
+  - `--color-primary`: `#06b6d4` (cyan‑400)
+
+- **Typography**
+  - Font family: **Geist** – imported via `@fontsource/geist`.
+  - Headings use `font‑bold`, body uses `font‑regular`.
+
+## Contracts
+
+- [WALLET_INTEGRATION_CONTRACT.md](WALLET_INTEGRATION_CONTRACT.md)
+- [FILTER_CONTRACTS.md](FILTER_CONTRACTS.md)
 
 ---
 
