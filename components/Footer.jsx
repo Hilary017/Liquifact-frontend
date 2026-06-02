@@ -3,7 +3,7 @@ import { copy } from '../app/copy/en';
 export default function Footer() {
   return (
     <footer className="border-t border-slate-800 bg-slate-950 px-6 py-8">
-      <div className="max-w-4xl mx-auto flex flex-wrap items-center gap-6 text-sm text-slate-500">
+      <div className="max-w-4xl mx-auto flex flex-wrap items-center gap-6 text-sm text-slate-300">
         {/* TODO: Add actual links when ready */}
         <a href="#" className="inline-block py-3 hover:text-cyan-400 transition-colors">
           {copy.footer.docs}

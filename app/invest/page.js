@@ -179,7 +179,7 @@ export default function InvestPage() {
         {invoices === null ? (
           <InvoiceListSkeleton rows={3} />
         ) : invoices.length === 0 ? (
-          <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-8 text-center text-slate-500">
+          <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-8 text-center text-slate-300">
             No investable invoices. Connect wallet to see the marketplace.
           </div>
         ) : (
@@ -198,7 +198,7 @@ export default function InvestPage() {
                       {inv.status}
                     </span>
                   </div>
-                  <div className="flex gap-6 text-sm text-slate-400">
+                  <div className="flex gap-6 text-sm text-slate-300">
                     <span>
                       {inv.currency}&nbsp;{inv.amount}
                     </span>
@@ -208,7 +208,7 @@ export default function InvestPage() {
                 </li>
               ))}
             </ul>
-            <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900/30 p-4 text-sm text-slate-400">
+            <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900/30 p-4 text-sm text-slate-300">
               Note: Yield references are educational only and reflect on-chain basis-point assumptions. Invoice contracts settle at maturity.
             </div>
           </>

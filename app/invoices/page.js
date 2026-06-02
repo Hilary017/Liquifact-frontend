@@ -1,8 +1,7 @@
 import Link from "next/link";
 import ErrorBanner from "../../components/ErrorBanner";
-
 import { useRef, useState } from 'react';
-import Link from 'next/link';
+import { copy } from '../copy/en';
 
 /**
  * FILE_CONSTRAINTS
@@ -53,7 +52,7 @@ function FileConstraintNotice() {
         <ConstraintBadge icon="⚖️" label={`Max ${FILE_CONSTRAINTS.maxSizeMb} MB`} />
         <ConstraintBadge icon="🔒" label="One file per invoice" />
       </div>
-      <p className="text-xs text-slate-400 leading-relaxed">
+      <p className="text-xs text-slate-300 leading-relaxed">
         Only <strong className="text-slate-200">PDF documents</strong> are accepted.
         Files larger than <strong className="text-slate-200">{FILE_CONSTRAINTS.maxSizeMb} MB</strong> will
         be rejected. Ensure your invoice is complete and legible before uploading.
@@ -160,10 +159,10 @@ function UploadZone() {
           <div className="space-y-2">
             <span className="text-3xl" aria-hidden="true">✅</span>
             <p className="font-medium text-emerald-400">{file.name}</p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-300">
               {(file.size / 1024 / 1024).toFixed(2)} MB · PDF
             </p>
-            <p className="text-xs text-slate-500">Click to choose a different file</p>
+            <p className="text-xs text-slate-300">Click to choose a different file</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -171,12 +170,12 @@ function UploadZone() {
             <p className="font-medium text-slate-300">
               Drag &amp; drop your invoice PDF here
             </p>
-            <p className="text-sm text-slate-500">or click to browse</p>
+            <p className="text-sm text-slate-300">or click to browse</p>
             <div className="flex justify-center gap-2 flex-wrap pt-1">
-              <span className="rounded-full bg-slate-800 px-2.5 py-0.5 text-xs text-slate-400">
+              <span className="rounded-full bg-slate-800 px-2.5 py-0.5 text-xs text-slate-300">
                 PDF only
               </span>
-              <span className="rounded-full bg-slate-800 px-2.5 py-0.5 text-xs text-slate-400">
+              <span className="rounded-full bg-slate-800 px-2.5 py-0.5 text-xs text-slate-300">
                 Max {FILE_CONSTRAINTS.maxSizeMb} MB
               </span>
             </div>
@@ -205,7 +204,7 @@ function UploadZone() {
         >
           <span aria-hidden="true">🚀</span>
           Invoice queued for tokenization. Blockchain confirmation pending.
-          <span className="text-slate-500 ml-1">(stub — backend TBD)</span>
+          <span className="text-slate-300 ml-1">(stub — backend TBD)</span>
         </p>
       )}
 
@@ -252,7 +251,7 @@ export default function InvoicesPage() {
         <p className="text-slate-400 mb-8">
           {copy.invoices.subtext}
         </p>
-        <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-8 text-center text-slate-500">
+        <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-8 text-center text-slate-300">
           {copy.invoices.emptyState}
         </div>
       </main>
