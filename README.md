@@ -83,6 +83,9 @@ Keep both passing before opening a PR.
 
 ## Contributing
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor workflow, branch naming convention, local checks, and accessibility expectations.
+
+
 1. **Fork** the repo and clone your fork.
 2. **Create a branch** from `main`: `git checkout -b feature/your-feature` or `fix/your-fix`.
 3. **Setup**: `npm ci`, optionally `cp .env.local.example .env.local`.
