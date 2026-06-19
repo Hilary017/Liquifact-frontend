@@ -2,6 +2,8 @@
 
 import { useRef, useState } from 'react';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 const FILE_CONSTRAINTS = {
   accept: '.pdf',
   mimeType: 'application/pdf',
@@ -110,13 +112,27 @@ function UploadZone() {
     setStatus('uploading');
     setError(null);
 
-    await new Promise((r) => setTimeout(r, 1500));
+    try {
+      const body = new FormData();
+      body.append('invoice', file);
 
-    setStatus('tokenizing');
+      const res = await fetch(`${API_URL}/invoices`, { method: 'POST', body });
 
-    await new Promise((r) => setTimeout(r, 1500));
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || `Upload failed (${res.status})`);
+      }
 
-    setStatus('success');
+      setStatus('tokenizing');
+      const { tokenizationDelay = 0 } = await res.json().catch(() => ({}));
+      if (tokenizationDelay > 0) {
+        await new Promise((r) => setTimeout(r, tokenizationDelay));
+      }
+      setStatus('success');
+    } catch (err) {
+      setError(err.message || 'Upload failed. Please try again.');
+      setStatus('idle');
+    }
   }
 
   function handleKeyDown(e) {
@@ -236,8 +252,8 @@ function UploadZone() {
       <button
         id="invoice-upload-btn"
         type="submit"
-        disabled={!file || !!error || isProcessing}
-        aria-disabled={!file || !!error || isProcessing}
+        disabled={!file || isProcessing}
+        aria-disabled={!file || isProcessing}
         className="mt-4 w-full rounded-xl bg-cyan-500 py-3 text-sm font-semibold text-slate-950 transition-all duration-200
           hover:bg-cyan-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400
           disabled:opacity-40 disabled:cursor-not-allowed"
