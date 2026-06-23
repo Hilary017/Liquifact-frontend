@@ -111,6 +111,10 @@ See [COMPONENTS.md](COMPONENTS.md) for the full component library reference — 
   - Font family: **Geist** – imported via `@fontsource/geist`.
   - Headings use `font‑bold`, body uses `font‑regular`.
 
+## Testing
+
+See [TESTING.md](TESTING.md) for the full guide covering Jest unit/accessibility tests and Playwright end-to-end setup.
+
 ## Contracts
 
 - [WALLET_INTEGRATION_CONTRACT.md](WALLET_INTEGRATION_CONTRACT.md)
