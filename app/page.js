@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { copy } from './copy/en';
-import { extractKnownFields, safeJsonStringify } from '@/lib/format/safeJson';
+import { useState } from "react";
+import { copy } from "./copy/en";
+import NavMenu from "../components/NavMenu";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export default function Home() {
   const [health, setHealth] = useState(null);
@@ -17,44 +17,26 @@ export default function Home() {
       const data = await res.json();
       setHealth(data);
     } catch (e) {
-      setHealth({ status: 'error', message: e.message });
+      setHealth({ status: "error", message: e.message });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
-      <header className="border-b border-slate-800 px-6 py-4 flex items-center justify-between">
-        <span className="text-xl font-semibold tracking-tight">LiquiFact</span>
-        <button
-          type="button"
-          className="rounded-full bg-cyan-500/20 text-cyan-400 px-4 py-3 text-sm font-medium hover:bg-cyan-500/30 transition-colors"
-        >
-          {copy.layout.connectWallet}
-        </button>
-      </header>
+    <div className="min-h-screen bg-slate-950 text-slate-100">
+      <NavMenu />
 
       <main className="max-w-4xl mx-auto px-6 py-16">
-        <h1 className="text-4xl font-bold tracking-tight mb-4">
-          {copy.home.heroTitle}
-        </h1>
-        <p className="text-slate-400 text-lg mb-12 max-w-2xl">
-          {copy.home.heroSub}
-        </p>
+        <h1 className="text-4xl font-bold tracking-tight mb-4">{copy.home.heroTitle}</h1>
+        <p className="text-slate-400 text-lg mb-12 max-w-2xl">{copy.home.heroSub}</p>
 
         <div className="grid gap-6 sm:grid-cols-2 mb-12">
-          <a
-            href="/invoices"
-            className="block rounded-xl border border-slate-700 bg-slate-900/50 p-6 hover:border-cyan-500/50 transition-colors"
-          >
+          <a href="/invoices" className="block rounded-xl border border-slate-700 bg-slate-900/50 p-6 hover:border-cyan-500/50 transition-colors">
             <h2 className="text-lg font-semibold text-cyan-400 mb-2">{copy.home.boxBusinessTitle}</h2>
             <p className="text-slate-400 text-sm">{copy.home.boxBusinessSub}</p>
           </a>
-          <a
-            href="/invest"
-            className="block rounded-xl border border-slate-700 bg-slate-900/50 p-6 hover:border-cyan-500/50 transition-colors"
-          >
+          <a href="/invest" className="block rounded-xl border border-slate-700 bg-slate-900/50 p-6 hover:border-cyan-500/50 transition-colors">
             <h2 className="text-lg font-semibold text-cyan-400 mb-2">{copy.home.boxInvestTitle}</h2>
             <p className="text-slate-400 text-sm">{copy.home.boxInvestSub}</p>
           </a>
@@ -68,28 +50,9 @@ export default function Home() {
             disabled={loading}
             className="rounded-lg bg-slate-800 px-4 py-3 text-sm font-medium hover:bg-slate-700 disabled:opacity-50"
           >
-            {loading ? 'Checking…' : 'Check backend health'}
+            {loading ? "Checking…" : "Check backend health"}
           </button>
-          {health && (
-            <div className="mt-4 space-y-2">
-              <div className="rounded-lg bg-slate-950 p-4 text-xs text-slate-300 space-y-1">
-                {Object.entries(extractKnownFields(health)).map(([key, value]) => (
-                  <div key={key}>
-                    <span className="text-slate-500">{key}:</span>{' '}
-                    <span className="text-slate-300">{String(value)}</span>
-                  </div>
-                ))}
-              </div>
-              <details>
-                <summary className="cursor-pointer text-xs text-slate-400 hover:text-slate-300 select-none">
-                  Raw response
-                </summary>
-                <pre className="mt-2 p-4 rounded-lg bg-slate-950 text-xs text-slate-300 overflow-auto whitespace-pre-wrap">
-                  {safeJsonStringify(health)}
-                </pre>
-              </details>
-            </div>
-          )}
+          {health && <pre className="mt-4 p-4 rounded-lg bg-slate-950 text-xs text-slate-300 overflow-auto">{JSON.stringify(health, null, 2)}</pre>}
         </div>
       </main>
     </div>

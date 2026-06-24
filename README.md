@@ -195,13 +195,13 @@ For frontend/backend contract details see:
 
 ## Development
 
-| Command         | Description                |
-|-----------------|----------------------------|
-| `npm run dev`   | Start dev server (Turbopack) |
-| `npm run build` | Production build           |
-| `npm run start` | Start production server   |
-| `npm run lint`  | Run ESLint                 |
-| `npm run test:e2e` | Run Playwright smoke tests |
+| Command            | Description                  |
+| ------------------ | ---------------------------- |
+| `npm run dev`      | Start dev server (Turbopack) |
+| `npm run build`    | Production build             |
+| `npm run start`    | Start production server      |
+| `npm run lint`     | Run ESLint                   |
+| `npm run test:e2e` | Run Playwright smoke tests   |
 
 Default: [http://localhost:3000](http://localhost:3000). The home page can check API health at `NEXT_PUBLIC_API_URL` (default `http://localhost:3001`).
 
@@ -219,7 +219,10 @@ liquifact-frontend/
 │   ├── layout.js      # Root layout, LiquiFact metadata
 │   ├── page.js        # Home (wallet CTA, API health check)
 │   ├── invoices/      # Invoices placeholder page
-│   └── invest/       # Invest placeholder page
+│   └── invest/        # Invest placeholder page
+├── components/
+│   ├── NavMenu.jsx    # Responsive site-wide navigation header
+│   └── ...            # Other shared components
 ├── public/
 ├── .env.local.example
 ├── eslint.config.mjs
@@ -245,7 +248,6 @@ Keep both passing before opening a PR.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor workflow, branch naming convention, local checks, and accessibility expectations. Also see our [Accessibility Statement](docs/accessibility.md).
 
-
 1. **Fork** the repo and clone your fork.
 2. **Create a branch** from `main`: `git checkout -b feature/your-feature` or `fix/your-fix`.
 3. **Setup**: `npm ci`, optionally `cp .env.local.example .env.local`.
@@ -257,6 +259,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor workflow, branch
 7. Wait for CI and address review feedback.
 
 We welcome UI improvements, new pages (e.g. invoice upload, marketplace), and Stellar wallet integration aligned with the LiquiFact product.
+
 ## UI Components
 
 See [COMPONENTS.md](COMPONENTS.md) for the full component library reference — props, accessibility notes, and usage examples for every shared component (`ErrorBanner`, `Footer`, `InvoiceListSkeleton`, `ToastProvider`, `UploadZone`, `WalletProvider`, `WalletStatus`).
@@ -291,6 +294,44 @@ function FundInvoiceButton() {
 | Private keys / secrets | **Never** | Rejected on read if detected |
 
 The provider rehydrates from storage **after mount** (SSR-safe). `disconnect()` clears storage immediately. See [WALLET_INTEGRATION_CONTRACT.md](WALLET_INTEGRATION_CONTRACT.md) for the full integration contract.
+
+### NavMenu
+
+`components/NavMenu.jsx` — Responsive site-wide header navigation used on every page.
+
+**Props**
+
+| Prop            | Type       | Default            | Description                                      |
+| --------------- | ---------- | ------------------ | ------------------------------------------------ |
+| `walletLabel`   | `string`   | `'Connect Wallet'` | Label text rendered inside the wallet button     |
+| `onWalletClick` | `function` | `undefined`        | Callback fired when the wallet button is clicked |
+
+**Behaviour**
+
+- **Desktop (≥ `md` breakpoint):** Home, Invoices, and Invest links render inline in the header row alongside the wallet button.
+- **Mobile (< `md` breakpoint):** Nav links are hidden behind a hamburger toggle (☰). Clicking the toggle reveals a dropdown menu below the header bar.
+- The active route is detected automatically via `usePathname` and marked with `aria-current="page"` on the matching link.
+- The menu closes on **Escape** (with focus returned to the toggle button), on any navigation event (pathname change), or when the toggle is clicked again.
+- Passes `jest-axe` accessibility checks in both open and closed states. The toggle exposes `aria-expanded` and `aria-controls` so assistive technologies can correctly announce the disclosure state.
+
+**Usage**
+
+```jsx
+import NavMenu from "@/components/NavMenu";
+
+// Drop-in replacement for the static <header> on any page
+export default function MyPage() {
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100">
+      <NavMenu />
+      <main>...</main>
+    </div>
+  );
+}
+
+// With Stellar wallet integration
+<NavMenu walletLabel="Freighter" onWalletClick={handleConnectWallet} />;
+```
 
 ## Design Tokens
 

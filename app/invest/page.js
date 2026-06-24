@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import ErrorBanner from "@/components/ErrorBanner";
 import InvoiceListSkeleton from "@/components/InvoiceListSkeleton";
 import InvoiceSearch from "@/components/InvoiceSearch";
 import { copy } from "../copy/en";
+import NavMenu from "../../components/NavMenu";
 
 /**
  * Mock invoice data — replace with real API call once the backend endpoint
@@ -84,9 +84,7 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
           return;
         }
 
-        const normalizedInvoices = Array.isArray(nextInvoices)
-          ? nextInvoices
-          : [];
+        const normalizedInvoices = Array.isArray(nextInvoices) ? nextInvoices : [];
 
         setInvoices(normalizedInvoices);
       } catch {
@@ -130,20 +128,11 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
-      <header className="border-b border-slate-800 px-6 py-4">
-        <Link
-          href="/"
-          className="inline-block py-3 text-xl font-semibold tracking-tight text-cyan-400 hover:underline"
-        >
-          ← LiquiFact
-        </Link>
-      </header>
+      <NavMenu />
 
       <main className="max-w-4xl mx-auto px-6 py-12">
         <h1 className="text-2xl font-bold mb-2">{copy.invest.title}</h1>
-        <p className="text-slate-400 mb-8">
-          {copy.invest.subtext}
-        </p>
+        <p className="text-slate-400 mb-8">{copy.invest.subtext}</p>
 
         <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
           {statusMessage}
@@ -171,9 +160,7 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              <span className="inline-flex items-center rounded-full bg-slate-700/60 px-2.5 py-1 text-xs font-medium text-slate-300">
-                Soon
-              </span>
+              <span className="inline-flex items-center rounded-full bg-slate-700/60 px-2.5 py-1 text-xs font-medium text-slate-300">Soon</span>
             </div>
 
             {/* Currency Filter */}
@@ -189,9 +176,7 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              <span className="inline-flex items-center rounded-full bg-slate-700/60 px-2.5 py-1 text-xs font-medium text-slate-300">
-                Soon
-              </span>
+              <span className="inline-flex items-center rounded-full bg-slate-700/60 px-2.5 py-1 text-xs font-medium text-slate-300">Soon</span>
             </div>
 
             {/* Maturity Date Filter */}
@@ -207,9 +192,7 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              <span className="inline-flex items-center rounded-full bg-slate-700/60 px-2.5 py-1 text-xs font-medium text-slate-300">
-                Soon
-              </span>
+              <span className="inline-flex items-center rounded-full bg-slate-700/60 px-2.5 py-1 text-xs font-medium text-slate-300">Soon</span>
             </div>
 
             {/* Sort Options */}
@@ -225,9 +208,7 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              <span className="inline-flex items-center rounded-full bg-slate-700/60 px-2.5 py-1 text-xs font-medium text-slate-300">
-                Soon
-              </span>
+              <span className="inline-flex items-center rounded-full bg-slate-700/60 px-2.5 py-1 text-xs font-medium text-slate-300">Soon</span>
             </div>
 
             {/* Clear Filters - Also Disabled */}
@@ -240,45 +221,25 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
               >
                 Clear Filters
               </button>
-              <span className="inline-flex items-center rounded-full bg-slate-700/60 px-2.5 py-1 text-xs font-medium text-slate-300">
-                Soon
-              </span>
+              <span className="inline-flex items-center rounded-full bg-slate-700/60 px-2.5 py-1 text-xs font-medium text-slate-300">Soon</span>
             </div>
           </div>
         </div>
 
         {loadError ? (
-          <ErrorBanner
-            variant="error"
-            title="Unable to load investable invoices"
-            description={loadError}
-            previewLabel="Marketplace status"
-          />
+          <ErrorBanner variant="error" title="Unable to load investable invoices" description={loadError} previewLabel="Marketplace status" />
         ) : invoices === null ? (
           <InvoiceListSkeleton rows={3} />
         ) : invoices.length === 0 ? (
-          <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-8 text-center text-slate-300">
-            {copy.invest.emptyState}
-          </div>
-        ) : filteredInvoices.length === 0 ? (
-          <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-8 text-center text-slate-400">
-            No invoices match your search. Try different keywords.
-          </div>
+          <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-8 text-center text-slate-300">{copy.invest.emptyState}</div>
         ) : (
           <>
             <ul className="space-y-4">
-              {filteredInvoices.map((inv) => (
-                <li
-                  key={inv.id}
-                  className="rounded-xl border border-slate-800 bg-slate-900/50 p-5"
-                >
+              {invoices.map((inv) => (
+                <li key={inv.id} className="rounded-xl border border-slate-800 bg-slate-900/50 p-5">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="font-medium text-slate-100">
-                      {inv.issuer}
-                    </span>
-                    <span className="text-xs font-semibold px-2 py-1 rounded-full bg-cyan-900/60 text-cyan-300">
-                      {inv.status}
-                    </span>
+                    <span className="font-medium text-slate-100">{inv.issuer}</span>
+                    <span className="text-xs font-semibold px-2 py-1 rounded-full bg-cyan-900/60 text-cyan-300">{inv.status}</span>
                   </div>
                   <div className="flex gap-6 text-sm text-slate-300">
                     <span>
