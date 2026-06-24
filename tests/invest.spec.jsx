@@ -6,6 +6,8 @@ test('Invest marketplace loads and displays invoices', async ({ page }) => {
   // Assert skeleton is visible (aria-busy)
   const skeleton = page.locator('[aria-busy="true"]');
   await expect(skeleton).toBeVisible();
+  // Wait for skeleton to disappear
+  await expect(skeleton).toBeHidden();
 
   // Wait for loading to finish and verify the status announcement
   const statusRegion = page.locator('role=status');
