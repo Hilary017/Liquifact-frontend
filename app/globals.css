@@ -1,25 +1,42 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+  LiquiFact global theming tokens.
+  Pages assume a dark base UI: bg-slate-950 / text-slate-100.
+
+  Token mapping (per README):
+  - --color-bg: #0f0f0f (slate-950)
+  - --color-primary: #06b6d4 (cyan-400)
+*/
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Base surface */
+  --color-bg: #0f0f0f; /* slate-950 */
+
+  /* Primary brand */
+  --color-primary: #06b6d4; /* cyan-400 */
+
+  /* Base text */
+  --color-foreground: #f1f5f9; /* slate-100-ish */
+  --color-muted: #94a3b8; /* slate-400 */
+
+  /* Geist fonts (provided by app/layout.js via next/font) */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@media (prefers-color-scheme: light) {
+  /* Keep the app hard-themed dark to match the UI design across pages. */
+}
+
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-foreground);
+  font-family: var(--font-geist-sans);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  margin: 0;
 }
+
