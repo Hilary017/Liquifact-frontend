@@ -1,0 +1,255 @@
+'use client';
+
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+
+export const WALLET_STATES = {
+  DISCONNECTED: 'disconnected',
+  CONNECTING: 'connecting',
+  CONNECTED: 'connected',
+  ERROR: 'error',
+  WRONG_NETWORK: 'wrong_network',
+  NO_WALLET: 'no_wallet',
+};
+
+const STORAGE_KEY = 'liquifact-wallet-snapshot';
+const STORAGE_VERSION = 1;
+
+const MOCK_WALLET_DATA = {
+  address: 'GABC...XYZ123',
+  network: 'public',
+  balance: '1,234.56 XLM',
+};
+
+const VALID_NETWORKS = new Set(['public', 'testnet']);
+const PERSISTABLE_STATES = new Set([WALLET_STATES.CONNECTED]);
+
+/**
+ * Truncate a Stellar address for display and persistence.
+ * @param {string} address
+ * @returns {string}
+ */
+export function truncateAddress(address) {
+  if (!address || typeof address !== 'string') {
+    return '';
+  }
+  if (address.length <= 12) {
+    return address;
+  }
+  return `${address.slice(0, 4)}...${address.slice(-6)}`;
+}
+
+/**
+ * Validate and sanitize a wallet snapshot read from storage.
+ * Rejects corrupt payloads, secrets, and non-persistable states.
+ * @param {unknown} raw
+ * @returns {{ version: number, state: string, address: string, network: string } | null}
+ */
+export function sanitizeSnapshot(raw) {
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
+
+  const { version, state, address, network } = raw;
+
+  if (version !== STORAGE_VERSION) {
+    return null;
+  }
+  if (!PERSISTABLE_STATES.has(state)) {
+    return null;
+  }
+  if (typeof address !== 'string' || address.length === 0 || address.length > 64) {
+    return null;
+  }
+  if (typeof network !== 'string' || !VALID_NETWORKS.has(network)) {
+    return null;
+  }
+  // Never rehydrate values that look like secret keys
+  if (address.startsWith('S') && address.length >= 56) {
+    return null;
+  }
+
+  return {
+    version: STORAGE_VERSION,
+    state,
+    address: truncateAddress(address),
+    network,
+  };
+}
+
+/**
+ * @returns {boolean}
+ */
+export function isBrowser() {
+  return typeof window !== 'undefined';
+}
+
+/**
+ * Read and sanitize a persisted wallet snapshot. Safe to call only in the browser.
+ * @returns {{ version: number, state: string, address: string, network: string } | null}
+ */
+export function readStoredSnapshot() {
+  if (!isBrowser()) {
+    return null;
+  }
+
+  try {
+    const item = window.localStorage.getItem(STORAGE_KEY);
+    if (!item) {
+      return null;
+    }
+    return sanitizeSnapshot(JSON.parse(item));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Persist a minimal, non-sensitive wallet snapshot (truncated address + network only).
+ * @param {string} state
+ * @param {{ address: string, network: string }} walletData
+ */
+export function writeStoredSnapshot(state, walletData) {
+  if (!isBrowser()) {
+    return;
+  }
+
+  if (state === WALLET_STATES.CONNECTED && walletData) {
+    const snapshot = {
+      version: STORAGE_VERSION,
+      state: WALLET_STATES.CONNECTED,
+      address: truncateAddress(walletData.address),
+      network: walletData.network,
+    };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+    return;
+  }
+
+  clearStoredSnapshot();
+}
+
+/**
+ * Remove any persisted wallet snapshot from storage.
+ */
+export function clearStoredSnapshot() {
+  if (!isBrowser()) {
+    return;
+  }
+  window.localStorage.removeItem(STORAGE_KEY);
+}
+
+const WalletContext = createContext(null);
+
+/** @internal Exported for unit tests that override wallet state */
+export { WalletContext };
+
+/**
+ * Shared wallet connection state with localStorage rehydration after mount.
+ * Persists only connection intent, truncated address, and network — never secrets or balances.
+ *
+ * @param {object} props
+ * @param {import('react').ReactNode} props.children - Application tree to wrap
+ */
+export function WalletProvider({ children }) {
+  const [state, setState] = useState(WALLET_STATES.DISCONNECTED);
+  const [walletData, setWalletData] = useState(null);
+  const skipPersistRef = useRef(true);
+
+  useEffect(() => {
+    const snapshot = readStoredSnapshot();
+    if (snapshot) {
+      /* eslint-disable react-hooks/set-state-in-effect -- rehydrate persisted wallet snapshot once after mount */
+      setState(snapshot.state);
+      setWalletData({
+        address: snapshot.address,
+        network: snapshot.network,
+      });
+      /* eslint-enable react-hooks/set-state-in-effect */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (skipPersistRef.current) {
+      skipPersistRef.current = false;
+      return;
+    }
+
+    if (state === WALLET_STATES.CONNECTED && walletData) {
+      writeStoredSnapshot(state, walletData);
+      return;
+    }
+
+    if (
+      state === WALLET_STATES.DISCONNECTED ||
+      state === WALLET_STATES.ERROR ||
+      state === WALLET_STATES.WRONG_NETWORK
+    ) {
+      clearStoredSnapshot();
+    }
+  }, [state, walletData]);
+
+  const connect = useCallback(() => {
+    return new Promise((resolve) => {
+      setState(WALLET_STATES.CONNECTING);
+
+      setTimeout(() => {
+        const scenarios = ['success', 'error', 'wrong_network'];
+        const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+
+        switch (scenario) {
+          case 'success':
+            setState(WALLET_STATES.CONNECTED);
+            setWalletData(MOCK_WALLET_DATA);
+            resolve({ outcome: 'success' });
+            break;
+          case 'error':
+            setState(WALLET_STATES.ERROR);
+            setWalletData(null);
+            resolve({
+              outcome: 'error',
+              message: 'Failed to connect to wallet. Please try again.',
+            });
+            break;
+          case 'wrong_network':
+            setState(WALLET_STATES.WRONG_NETWORK);
+            setWalletData(null);
+            resolve({
+              outcome: 'wrong_network',
+              message: 'Wallet is connected to testnet. Please switch to public network.',
+            });
+            break;
+        }
+      }, 1500);
+    });
+  }, []);
+
+  const disconnect = useCallback(() => {
+    setState(WALLET_STATES.DISCONNECTED);
+    setWalletData(null);
+    clearStoredSnapshot();
+  }, []);
+
+  const value = useMemo(
+    () => ({ state, walletData, connect, disconnect }),
+    [state, walletData, connect, disconnect],
+  );
+
+  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
+}
+
+/**
+ * Access shared wallet state and actions. Must be used within {@link WalletProvider}.
+ *
+ * @returns {{
+ *   state: string,
+ *   walletData: { address: string, network: string, balance?: string } | null,
+ *   connect: () => Promise<{ outcome: string, message?: string }>,
+ *   disconnect: () => void
+ * }}
+ */
+export function useWallet() {
+  const context = useContext(WalletContext);
+  if (!context) {
+    throw new Error('useWallet must be used within a WalletProvider');
+  }
+  return context;
+}

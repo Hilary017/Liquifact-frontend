@@ -74,14 +74,28 @@ Target wallets for integration:
 ## Integration Points
 
 ### Component Interface
-The `WalletStatus` component exposes:
-- `walletState` - Current connection state
-- `walletData` - Connected wallet information
-- `connectWallet()` - Initiate connection
-- `disconnectWallet()` - Terminate connection
+`WalletStatus` is a presentational consumer of `useWallet()` from `WalletProvider`. The shared hook exposes:
+- `state` - Current connection state
+- `walletData` - Connected wallet information (balance is runtime-only, not persisted)
+- `connect()` - Initiate connection (returns `{ outcome, message? }`)
+- `disconnect()` - Terminate connection and clear persisted snapshot
 
 ### Global State Management
-Consider implementing global state (Context/Zustand) for:
+`WalletProvider` (see `components/WalletProvider.jsx`) supplies shared wallet state via the `useWallet()` hook. It is mounted once in `app/layout.js` and persists a minimal, non-sensitive snapshot to `localStorage` so the UI can rehydrate after reload:
+
+```javascript
+// Persisted snapshot shape (liquifact-wallet-snapshot)
+{
+  version: 1,
+  state: 'connected',
+  address: 'GABC...XYZ123', // truncated only
+  network: 'public'
+}
+```
+
+Never persist balances, private keys, or full signing material. `WalletStatus` consumes `useWallet()` instead of local `useState`.
+
+Use global state for:
 - Wallet connection status across app
 - Transaction signing
 - Network operations

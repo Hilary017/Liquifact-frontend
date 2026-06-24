@@ -99,7 +99,38 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor workflow, branch
 We welcome UI improvements, new pages (e.g. invoice upload, marketplace), and Stellar wallet integration aligned with the LiquiFact product.
 ## UI Components
 
-See [COMPONENTS.md](COMPONENTS.md) for the full component library reference — props, accessibility notes, and usage examples for every shared component (`ErrorBanner`, `Footer`, `InvoiceListSkeleton`, `ToastProvider`, `UploadZone`, `WalletStatus`).
+See [COMPONENTS.md](COMPONENTS.md) for the full component library reference — props, accessibility notes, and usage examples for every shared component (`ErrorBanner`, `Footer`, `InvoiceListSkeleton`, `ToastProvider`, `UploadZone`, `WalletProvider`, `WalletStatus`).
+
+### Wallet connection (`WalletProvider`)
+
+Wallet state is shared app-wide via `WalletProvider`, mounted in `app/layout.js` inside `ToastProvider`. Any client component can read connection state with `useWallet()`:
+
+```jsx
+import { useWallet } from '@/components/WalletProvider';
+
+function FundInvoiceButton() {
+  const { state, walletData, connect, disconnect } = useWallet();
+
+  if (state !== 'connected') {
+    return <button type="button" onClick={() => connect()}>Connect wallet</button>;
+  }
+
+  return <span>Ready to fund as {walletData.address}</span>;
+}
+```
+
+**Persistence:** On successful connect, a minimal snapshot is saved to `localStorage` under `liquifact-wallet-snapshot`:
+
+| Field | Persisted | Notes |
+|-------|-----------|-------|
+| `version` | Yes | Schema version (`1`) |
+| `state` | Yes | Only `connected` is restored |
+| `address` | Yes | Truncated display form only (e.g. `GABC...XYZ123`) |
+| `network` | Yes | `public` or `testnet` |
+| `balance` | **No** | Fetched live after real wallet integration |
+| Private keys / secrets | **Never** | Rejected on read if detected |
+
+The provider rehydrates from storage **after mount** (SSR-safe). `disconnect()` clears storage immediately. See [WALLET_INTEGRATION_CONTRACT.md](WALLET_INTEGRATION_CONTRACT.md) for the full integration contract.
 
 ## Design Tokens
 
