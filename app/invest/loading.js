@@ -1,4 +1,4 @@
-import InvoiceListSkeleton from "@/components/InvoiceListSkeleton";
+import InvoiceListSkeleton from "../../components/InvoiceListSkeleton";
 
 export default function InvestLoading() {
   return (

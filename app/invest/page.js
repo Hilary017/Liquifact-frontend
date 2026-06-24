@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import ErrorBanner from "@/components/ErrorBanner";
-import InvoiceListSkeleton from "@/components/InvoiceListSkeleton";
+import ErrorBanner from "../../components/ErrorBanner";
+import InvoiceListSkeleton from "../../components/InvoiceListSkeleton";
 import { copy } from "../copy/en";
 
 /**
