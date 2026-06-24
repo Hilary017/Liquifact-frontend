@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import ErrorBanner from "@/components/ErrorBanner";
-import InvoiceListSkeleton from "@/components/InvoiceListSkeleton";
-import InvoiceSearch from "@/components/InvoiceSearch";
+import Link from "next/link";
+import ErrorBanner from "../../components/ErrorBanner";
+import InvoiceListSkeleton from "../../components/InvoiceListSkeleton";
 import { copy } from "../copy/en";
 import { loadMockInvoices } from "./lib";
 
