@@ -40,6 +40,9 @@ export const MOCK_INVOICES = [
 const DEV_DELAY = process.env.NODE_ENV === 'development' ? 1500 : 0;
 
 export function loadMockInvoices() {
+  if (typeof window !== 'undefined' && window.__TEST_MOCK_INVOICES__) {
+    return Promise.resolve(window.__TEST_MOCK_INVOICES__);
+  }
   return new Promise((resolve) => {
     setTimeout(() => resolve(MOCK_INVOICES), DEV_DELAY);
   });

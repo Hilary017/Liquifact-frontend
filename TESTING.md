@@ -118,6 +118,7 @@ npx playwright test tests/toast.spec.jsx
 | Path | What it covers |
 |------|---------------|
 | `tests/toast.spec.jsx` | Invoice upload flow — file selection, submit, toast notification. |
+| `tests/invest.spec.jsx` | Invest marketplace flow — loading, skeleton, list, status announcement, empty state. |
 | `tests/fixtures/` | Static fixture files used in tests (e.g. `dummy.pdf`). |
 
 ### Writing a new Playwright test
