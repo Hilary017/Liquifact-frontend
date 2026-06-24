@@ -8,10 +8,8 @@ import { axe } from 'jest-axe';
 test('WalletStatus has no accessibility violations', async () => {
   const { container } = render(
     <ToastProvider>
-      <WalletProvider>
-        <WalletStatus />
-      </WalletProvider>
-    </ToastProvider>,
+      <WalletStatus />
+    </ToastProvider>
   );
   const results = await axe(container);
   expect(results).toHaveNoViolations();

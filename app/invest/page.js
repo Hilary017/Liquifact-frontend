@@ -137,7 +137,8 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
         }
 
         setInvoices([]);
-        setLoadError("Unable to load investable invoices right now.");
+        setLoadError(copy.invest.errorDescription);
+        setStatusMessage(copy.invest.errorStatus);
       }
     };
 
@@ -182,7 +183,14 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
-      <NavMenu />
+      <header className="border-b border-slate-800 px-6 py-4">
+        <Link
+          href="/"
+          className="inline-block py-3 text-xl font-semibold tracking-tight text-cyan-400 hover:underline"
+        >
+          {copy.layout.backToHome}
+        </Link>
+      </header>
 
       <main className="max-w-4xl mx-auto px-6 py-12">
         <h1 className="text-2xl font-bold mb-2">{copy.invest.title}</h1>
@@ -273,7 +281,12 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
         </div>
 
         {loadError ? (
-          <ErrorBanner variant="error" title="Unable to load investable invoices" description={loadError} previewLabel="Marketplace status" />
+          <ErrorBanner
+            variant="error"
+            title={copy.invest.errorTitle}
+            description={loadError}
+            previewLabel="Marketplace status"
+          />
         ) : invoices === null ? (
           <InvoiceListSkeleton rows={3} />
         ) : invoices.length === 0 ? (

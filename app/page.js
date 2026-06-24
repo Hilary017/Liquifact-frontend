@@ -49,14 +49,14 @@ export default function Home() {
         </div>
 
         <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-6">
-          <h2 className="text-sm font-medium text-slate-400 mb-2">API status</h2>
+          <h2 className="text-sm font-medium text-slate-400 mb-2">{copy.home.apiStatus}</h2>
           <button
             type="button"
             onClick={checkApi}
             disabled={loading}
             className="rounded-lg cursor-pointer bg-slate-800 px-4 py-3 text-sm font-medium hover:bg-slate-700 disabled:opacity-50"
           >
-            {loading ? "Checking…" : "Check backend health"}
+            {loading ? copy.home.checking : copy.home.checkApiHealth}
           </button>
           {!loading && health && (
             <>
