@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { copy } from '../app/copy/en';
 
 const FILE_CONSTRAINTS = {
   accept: '.pdf',
@@ -22,6 +23,7 @@ function ConstraintBadge({ icon, label }) {
 }
 
 function FileConstraintNotice() {
+  const maxSizeMb = FILE_CONSTRAINTS.maxSizeMb;
   return (
     <div
       role="note"
@@ -29,17 +31,27 @@ function FileConstraintNotice() {
       className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4 mb-6"
     >
       <p className="text-xs font-semibold uppercase tracking-wider text-cyan-400 mb-3">
-        Upload requirements
+        {copy.uploadZone.requirementsTitle}
       </p>
       <div className="flex flex-wrap gap-2 mb-3">
-        <ConstraintBadge icon="\u{1F4C4}" label="PDF only" />
-        <ConstraintBadge icon="\u{2696}\u{FE0F}" label={`Max ${FILE_CONSTRAINTS.maxSizeMb} MB`} />
-        <ConstraintBadge icon="\u{1F512}" label="One file per invoice" />
+        <ConstraintBadge icon="\u{1F4C4}" label={copy.uploadZone.badgePdfOnly} />
+        <ConstraintBadge
+          icon="\u{2696}\u{FE0F}"
+          label={copy.uploadZone.badgeMaxSize.replace('{maxSizeMb}', maxSizeMb)}
+        />
+        <ConstraintBadge icon="\u{1F512}" label={copy.uploadZone.badgeOneFile} />
       </div>
       <p className="text-xs text-slate-400 leading-relaxed">
-        Only <strong className="text-slate-200">PDF documents</strong> are accepted.
-        Files larger than <strong className="text-slate-200">{FILE_CONSTRAINTS.maxSizeMb} MB</strong> will
-        be rejected. Ensure your invoice is complete and legible before uploading.
+        {copy.uploadZone.requirementsBody
+          .replace(/\{maxSizeMb\}/g, maxSizeMb)
+          .split(/(PDF documents|{maxSizeMb} MB)/)
+          .map((part, i) =>
+            part === 'PDF documents' || part === `${maxSizeMb} MB` ? (
+              <strong key={i} className="text-slate-200">{part}</strong>
+            ) : (
+              part
+            )
+          )}
       </p>
     </div>
   );
@@ -143,7 +155,7 @@ function UploadZone() {
       <div
         role="button"
         tabIndex={0}
-        aria-label="Drop PDF invoice here or press Enter to browse files"
+        aria-label={copy.uploadZone.dropZoneLabel}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
@@ -157,7 +169,7 @@ function UploadZone() {
           type="file"
           accept={FILE_CONSTRAINTS.accept}
           className="sr-only"
-          aria-label="Select PDF invoice file"
+          aria-label={copy.uploadZone.fileInputLabel}
           onChange={handleChange}
         />
 
@@ -168,21 +180,21 @@ function UploadZone() {
             <p className="text-xs text-slate-500">
               {(file.size / 1024 / 1024).toFixed(2)} MB {'\u00B7'} PDF
             </p>
-            <p className="text-xs text-slate-500">Click to choose a different file</p>
+            <p className="text-xs text-slate-500">{copy.uploadZone.changeFile}</p>
           </div>
         ) : (
           <div className="space-y-3">
             <span className="text-4xl" aria-hidden="true">{'\u{1F4C2}'}</span>
             <p className="font-medium text-slate-300">
-              Drag &amp; drop your invoice PDF here
+              {copy.uploadZone.dragDropPrompt}
             </p>
-            <p className="text-sm text-slate-500">or click to browse</p>
+            <p className="text-sm text-slate-500">{copy.uploadZone.browsePrompt}</p>
             <div className="flex justify-center gap-2 flex-wrap pt-1">
               <span className="rounded-full bg-slate-800 px-2.5 py-0.5 text-xs text-slate-400">
-                PDF only
+                {copy.uploadZone.badgePdfOnly}
               </span>
               <span className="rounded-full bg-slate-800 px-2.5 py-0.5 text-xs text-slate-400">
-                Max {FILE_CONSTRAINTS.maxSizeMb} MB
+                {copy.uploadZone.badgeMaxSize.replace('{maxSizeMb}', FILE_CONSTRAINTS.maxSizeMb)}
               </span>
             </div>
           </div>
@@ -207,7 +219,7 @@ function UploadZone() {
           className="mt-3 flex items-start gap-2 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-400"
         >
           <Spinner />
-          Uploading invoice...
+          {copy.uploadZone.statusUploading}
         </p>
       )}
 
@@ -218,7 +230,7 @@ function UploadZone() {
           className="mt-3 flex items-start gap-2 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-400"
         >
           <Spinner />
-          Invoice uploaded. Pending tokenization...
+          {copy.uploadZone.statusTokenizing}
         </p>
       )}
 
@@ -229,7 +241,7 @@ function UploadZone() {
           className="mt-3 flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400"
         >
           <span aria-hidden="true">{'\u{1F680}'}</span>
-          Invoice queued for tokenization. Blockchain confirmation pending.
+          {copy.uploadZone.statusSuccess}
         </p>
       )}
 
@@ -245,16 +257,16 @@ function UploadZone() {
         {status === 'uploading' && (
           <>
             <Spinner />
-            Uploading invoice...
+            {copy.uploadZone.submitUploading}
           </>
         )}
         {status === 'tokenizing' && (
           <>
             <Spinner />
-            Tokenizing invoice...
+            {copy.uploadZone.submitTokenizing}
           </>
         )}
-        {(status === 'idle' || status === 'success') && 'Upload & Tokenize Invoice'}
+        {(status === 'idle' || status === 'success') && copy.uploadZone.submitIdle}
       </button>
     </form>
   );

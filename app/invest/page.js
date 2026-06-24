@@ -88,8 +88,8 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
         }
 
         setInvoices([]);
-        setLoadError("Unable to load investable invoices right now.");
-        setStatusMessage("Unable to load investable invoices.");
+        setLoadError(copy.invest.errorDescription);
+        setStatusMessage(copy.invest.errorStatus);
       }
     };
 
@@ -107,7 +107,7 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
           href="/"
           className="inline-block py-3 text-xl font-semibold tracking-tight text-cyan-400 hover:underline"
         >
-          ← LiquiFact
+          {copy.layout.backToHome}
         </Link>
       </header>
 
@@ -216,7 +216,7 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
         {loadError ? (
           <ErrorBanner
             variant="error"
-            title="Unable to load investable invoices"
+            title={copy.invest.errorTitle}
             description={loadError}
             previewLabel="Marketplace status"
           />

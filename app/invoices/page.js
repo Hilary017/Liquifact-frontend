@@ -10,13 +10,13 @@ export default function InvoicesPage() {
           href="/"
           className="inline-block py-3 text-xl font-semibold tracking-tight text-cyan-400 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400 rounded"
         >
-          ← LiquiFact
+          {copy.invoices.backToHome}
         </Link>
         <button
           type="button"
           className="rounded-full bg-cyan-500/20 text-cyan-400 px-4 py-3 text-sm font-medium hover:bg-cyan-500/30 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400"
         >
-          Connect Wallet
+          {copy.invoices.connectWallet}
         </button>
       </header>
       <main className="max-w-4xl mx-auto px-6 py-12">
