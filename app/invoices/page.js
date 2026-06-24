@@ -68,6 +68,7 @@ function FileConstraintNotice() {
  */
 function UploadZone() {
   const inputRef = useRef(null);
+  const dropzoneRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
   const [file, setFile] = useState(null);
   const [error, setError] = useState(null);
@@ -123,6 +124,14 @@ function UploadZone() {
     }
   }
 
+  function handleReset() {
+    setFile(null);
+    setError(null);
+    setSubmitted(false);
+    // Move focus to dropzone so keyboard users can immediately start again
+    dropzoneRef.current?.focus();
+  }
+
   const dropZoneBorder = dragOver
     ? 'border-cyan-400 bg-cyan-500/10'
     : error
@@ -135,6 +144,7 @@ function UploadZone() {
     <form onSubmit={handleSubmit} noValidate>
       {/* Drop zone */}
       <div
+        ref={dropzoneRef}
         role="button"
         tabIndex={0}
         aria-label="Drop PDF invoice here or press Enter to browse files"
@@ -208,18 +218,29 @@ function UploadZone() {
         </p>
       )}
 
-      {/* Submit CTA */}
-      <button
-        id="invoice-upload-btn"
-        type="submit"
-        disabled={!file || !!error}
-        aria-disabled={!file || !!error}
-        className="mt-4 w-full rounded-xl bg-cyan-500 py-3 text-sm font-semibold text-slate-950 transition-all duration-200
-          hover:bg-cyan-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400
-          disabled:opacity-40 disabled:cursor-not-allowed"
-      >
-        Upload &amp; Tokenize Invoice
-      </button>
+      {/* Submit CTA or Upload another button */}
+      {submitted ? (
+        <button
+          type="button"
+          onClick={handleReset}
+          className="mt-4 w-full rounded-xl bg-cyan-500 py-3 text-sm font-semibold text-slate-950 transition-all duration-200
+            hover:bg-cyan-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400"
+        >
+          Upload another invoice
+        </button>
+      ) : (
+        <button
+          id="invoice-upload-btn"
+          type="submit"
+          disabled={!file || !!error}
+          aria-disabled={!file || !!error}
+          className="mt-4 w-full rounded-xl bg-cyan-500 py-3 text-sm font-semibold text-slate-950 transition-all duration-200
+            hover:bg-cyan-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400
+            disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Upload &amp; Tokenize Invoice
+        </button>
+      )}
     </form>
   );
 }
