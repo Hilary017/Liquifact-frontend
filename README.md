@@ -115,6 +115,21 @@ See [COMPONENTS.md](COMPONENTS.md) for the full component library reference — 
 
 See [TESTING.md](TESTING.md) for the full guide covering Jest unit/accessibility tests and Playwright end-to-end setup.
 
+## Backend Health Check
+
+The home page health check now:
+
+- Uses an 8 second timeout.
+- Aborts hung requests.
+- Safely handles HTML and malformed JSON responses.
+- Reports one of the following:
+
+  - Connected
+  - Degraded
+  - Unreachable
+
+- Provides a detailed disclosure for raw responses.
+
 ## Contracts
 
 - [WALLET_INTEGRATION_CONTRACT.md](WALLET_INTEGRATION_CONTRACT.md)
