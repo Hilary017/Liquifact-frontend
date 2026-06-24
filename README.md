@@ -241,6 +241,19 @@ Tech: **Next.js 16** (App Router), **React 19**, **Tailwind CSS 4**.
 
 ---
 
+## Accessibility
+
+### Skip-to-content link
+
+A visually-hidden "Skip to content" link is the first focusable element on every page. It becomes visible when focused (first Tab press) and jumps the keyboard user past the navigation header directly to `<main id="main-content">`.
+
+All interactive elements (nav links, card links, buttons) use a consistent `focus-visible` cyan outline that matches the brand's primary colour. The utility classes are defined in `app/globals.css`:
+
+- `.skip-link` — positions and reveals the skip link on focus
+- `.focus-ring` — reusable `focus-visible` outline for custom interactive elements
+
+---
+
 ## CI/CD
 
 GitHub Actions runs on every push and pull request to `main`:

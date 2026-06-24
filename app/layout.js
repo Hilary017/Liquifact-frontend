@@ -25,6 +25,10 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/* Skip link: first focusable element so keyboard users can bypass the header */}
+        <a href="#main-content" className="skip-link">
+          Skip to content
+        </a>
         <ToastProvider>
           <WalletProvider>
             {children}

@@ -5,6 +5,7 @@ const config = {
     '^@/(.*)$': '<rootDir>/$1',
     '^next/link$': '<rootDir>/__mocks__/next-link.jsx',
     '^next/font/google$': '<rootDir>/__mocks__/next-font-google.js',
+    '^.+\\.css$': '<rootDir>/__mocks__/style.js',
   },
   testPathIgnorePatterns: ['/node_modules/', '/.next/', '<rootDir>/tests/'],
   transform: {
