@@ -115,6 +115,8 @@ We welcome UI improvements, new pages (e.g., invoice upload, marketplace), and S
 
 See [COMPONENTS.md](COMPONENTS.md) for the full component library reference — props, accessibility notes, and usage examples for every shared component (`ErrorBanner`, `Footer`, `InvoiceListSkeleton`, `ToastProvider`, `UploadZone`, `WalletStatus`).
 
+The `Footer` component now renders real destination links sourced from `app/copy/en.js`, including external documentation, system status, contact support, and a Discord community link with secure `target="_blank" rel="noopener noreferrer"` handling.
+
 ---
 
 ## Design Tokens
