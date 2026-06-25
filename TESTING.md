@@ -133,6 +133,58 @@ test('page title is correct', async ({ page }) => {
 });
 ```
 
+### Invoice Detail Funding Flow Test
+
+```js
+// tests/invest-detail.spec.jsx
+import { test, expect } from '@playwright/test';
+
+test('Invoice detail funding flow', async ({ page }) => {
+  // deterministic invoices via test hook
+  await page.addInitScript(() => {
+    window.__TEST_MOCK_INVOICES__ = [
+      {
+        id: 'invoice-123',
+        amount: 5000,
+        currency: 'USD',
+        dueDate: '2024-12-31',
+        description: 'Test Invoice',
+      },
+    ];
+  });
+
+  // navigate to marketplace
+  await page.goto('/invest');
+
+  // open known invoice
+  const invoiceLink = page.locator(`a[href="/invest/invoice-123"]`).first();
+  await expect(invoiceLink).toBeVisible();
+  await invoiceLink.click();
+
+  // verify summary
+  await expect(page.locator('h1')).toContainText('Test Invoice');
+  await expect(page.locator('text=USD')).toBeVisible();
+  await expect(page.locator('text=5000')).toBeVisible();
+
+  // fund button behavior
+  const fundButton = page.getByRole('button', { name: /Fund this invoice/i });
+  await expect(fundButton).toBeVisible();
+  await fundButton.click();
+  await expect(page.locator('text=Connect wallet to fund')).toBeVisible();
+
+  // simulate connecting state
+  await page.evaluate(() => {
+    window.__TEST_WALLET_STATE__ = 'connecting';
+  });
+  await expect(fundButton).toBeDisabled();
+
+  // unknown invoice not-found
+  await page.goto('/invest/unknown-id');
+  await expect(page.locator('text=Invoice not found')).toBeVisible();
+});
+```
+
+
 ---
 
 ## CI
