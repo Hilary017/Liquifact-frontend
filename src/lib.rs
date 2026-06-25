@@ -556,6 +556,16 @@ impl TimeLockedUpgradeContract {
         Ok(())
     }
 
+    // --- Admin Ownership Transfer (Issue #429) ---
+
+    pub fn propose_ownership_transfer(env: Env, current_admin: Address, nominee: Address) -> Result<(), ContractError> {
+        admin::propose_ownership_transfer(&env, current_admin, nominee)
+    }
+
+    pub fn claim_ownership(env: Env, claimer: Address) -> Result<(), ContractError> {
+        admin::claim_ownership(&env, claimer)
+    }
+
     // --- Private Helpers ---
 
     fn assert_contract_is_active(env: &Env) -> Result<(), ContractError> {
