@@ -4,6 +4,11 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+// Lazy-load WalletStatus so the wallet chunk (Stellar/Freighter SDK) is not
+// in the initial JS bundle. The placeholder prevents CLS while the chunk
+// downloads. ssr: false avoids "window is not defined" during server render.
+import WalletStatusLazy from "./WalletStatusLazy";
+
 /**
  * @typedef {Object} NavLink
  * @property {string} href - The route path.
@@ -27,11 +32,11 @@ const NAV_LINKS = [
  * Closes on Escape, on navigation, and returns focus to the toggle button
  * when dismissed.
  *
- * @param {Object}   props
- * @param {string}   [props.walletLabel='Connect Wallet'] - Label for the wallet button.
- * @param {Function} [props.onWalletClick] - Handler called when the wallet button is clicked.
+ * The wallet UI is lazy-loaded via next/dynamic so the Stellar wallet SDK
+ * does not ship in the initial bundle for pages that don't need it
+ * immediately (e.g. the static home page).
  */
-export default function NavMenu({ walletLabel = "Connect Wallet", onWalletClick }) {
+export default function NavMenu() {
   const pathname = usePathname();
   const toggleRef = useRef(null);
   const menuRef = useRef(null);
@@ -74,7 +79,12 @@ export default function NavMenu({ walletLabel = "Connect Wallet", onWalletClick 
     if (!open) return;
 
     const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target) && toggleRef.current && !toggleRef.current.contains(e.target)) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target) &&
+        toggleRef.current &&
+        !toggleRef.current.contains(e.target)
+      ) {
         setOpenPathname(null);
       }
     };
@@ -106,23 +116,23 @@ export default function NavMenu({ walletLabel = "Connect Wallet", onWalletClick 
               href={href}
               aria-current={pathname === href ? "page" : undefined}
               className={`text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400 rounded ${
-                pathname === href ? "text-cyan-400" : "text-slate-300 hover:text-cyan-400 active:text-cyan-300"
+                pathname === href
+                  ? "text-cyan-400"
+                  : "text-slate-300 hover:text-cyan-400 active:text-cyan-300"
               }`}
             >
               {label}
             </Link>
           ))}
+          {/* Lazy-loaded wallet UI — chunk fetched on demand, not in initial bundle */}
+          <WalletStatusLazy />
         </nav>
 
         <div className="flex items-center gap-3">
-          {/* Wallet button */}
-          <button
-            type="button"
-            onClick={onWalletClick}
-            className="rounded-full bg-cyan-500/20 text-cyan-400 px-4 py-2 text-sm font-medium hover:bg-cyan-500/30 active:bg-cyan-500/40 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400"
-          >
-            {walletLabel}
-          </button>
+          {/* Wallet button — lazy-loaded on mobile too */}
+          <div className="md:hidden">
+            <WalletStatusLazy />
+          </div>
 
           {/* Mobile hamburger */}
           <button

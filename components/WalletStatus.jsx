@@ -1,72 +1,134 @@
 'use client';
 
-import { useWallet, WALLET_STATES } from './WalletContext';
+import { useState } from 'react';
+import { useToast } from './ToastProvider';
+import { copy } from '../app/copy/en';
+
+// Wallet connection states
+const WALLET_STATES = {
+  DISCONNECTED: 'disconnected',
+  CONNECTING: 'connecting',
+  CONNECTED: 'connected',
+  ERROR: 'error',
+  WRONG_NETWORK: 'wrong_network',
+  NO_WALLET: 'no_wallet',
+};
+
+// Mock wallet data for UI development
+const mockWalletData = {
+  address: 'GABC...XYZ123',
+  network: 'public',
+  balance: '1,234.56 XLM',
+};
 
 export default function WalletStatus() {
-  const { walletState, walletData, error, connectWallet, disconnectWallet } = useWallet();
+  const [walletState, setWalletState] = useState(WALLET_STATES.DISCONNECTED);
+  const [walletData, setWalletData] = useState(null);
+  const [error, setError] = useState(null);
+  const toast = useToast();
+
+  const connectWallet = async () => {
+    setWalletState(WALLET_STATES.CONNECTING);
+    setError(null);
+
+    // Mock connection process - replace with actual wallet integration
+    setTimeout(() => {
+      // Simulate different scenarios for testing
+      const scenarios = ['success', 'error', 'wrong_network'];
+      const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+
+      switch (scenario) {
+        case 'success':
+          setWalletState(WALLET_STATES.CONNECTED);
+          setWalletData(mockWalletData);
+          toast.success(copy.wallet.toastConnectedMsg, copy.wallet.toastConnectedTitle);
+          break;
+        case 'error':
+          setWalletState(WALLET_STATES.ERROR);
+          setError(copy.wallet.errorConnect);
+          toast.error(copy.wallet.toastErrorMsg, copy.wallet.toastErrorTitle);
+          break;
+        case 'wrong_network':
+          setWalletState(WALLET_STATES.WRONG_NETWORK);
+          setError(copy.wallet.errorWrongNetwork);
+          toast.error(copy.wallet.toastWrongNetworkMsg, copy.wallet.toastWrongNetworkTitle);
+          break;
+      }
+    }, 1500);
+  };
+
+  const disconnectWallet = () => {
+    setWalletState(WALLET_STATES.DISCONNECTED);
+    setWalletData(null);
+    setError(null);
+  };
 
   const getStateConfig = (state) => {
     switch (state) {
       case WALLET_STATES.DISCONNECTED:
         return {
-          buttonText: 'Connect Wallet',
+          buttonText: copy.wallet.connectButton,
           buttonVariant: 'primary',
-          helperText: 'Connect your Stellar wallet to access the platform',
+          helperText: copy.wallet.helperDisconnected,
           disabled: false,
           showAddress: false,
         };
 
       case WALLET_STATES.CONNECTING:
         return {
-          buttonText: 'Connecting…',
+          buttonText: copy.wallet.connectingButton,
           buttonVariant: 'loading',
-          helperText: 'Please approve the connection in your wallet',
+          helperText: copy.wallet.helperConnecting,
           disabled: true,
           showAddress: false,
         };
 
       case WALLET_STATES.CONNECTED:
         return {
-          buttonText: 'Disconnect',
+          buttonText: copy.wallet.disconnectButton,
           buttonVariant: 'secondary',
-          helperText: `Connected to Stellar ${walletData?.network || 'public'}`,
+          helperText: copy.wallet.helperConnected.replace('{network}', walletData?.network || 'public'),
           disabled: false,
           showAddress: true,
         };
 
       case WALLET_STATES.ERROR:
         return {
-          buttonText: 'Retry Connection',
+          buttonText: copy.wallet.retryButton,
           buttonVariant: 'primary',
-          helperText: error || 'Connection failed. Please try again.',
+          helperText: error || copy.wallet.helperError,
           disabled: false,
           showAddress: false,
         };
 
       case WALLET_STATES.WRONG_NETWORK:
         return {
-          buttonText: 'Switch Network',
+          buttonText: copy.wallet.switchNetworkButton,
           buttonVariant: 'warning',
-          helperText: 'Please switch to the Stellar public network',
+          helperText: copy.wallet.helperWrongNetwork,
           disabled: false,
           showAddress: false,
         };
 
       case WALLET_STATES.NO_WALLET:
         return {
-          buttonText: 'Install Wallet',
+          buttonText: copy.wallet.installWalletButton,
           buttonVariant: 'external',
-          helperText: 'No Stellar wallet detected. Install one to continue',
+          helperText: copy.wallet.helperNoWallet,
           disabled: false,
           showAddress: false,
         };
+
+      default:
+        return getStateConfig(WALLET_STATES.DISCONNECTED);
     }
   };
 
   const config = getStateConfig(walletState);
 
   const getButtonStyles = (variant) => {
-    const baseStyles = 'rounded-full px-4 py-3 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950';
+    const baseStyles =
+      'rounded-full px-4 py-3 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950';
 
     switch (variant) {
       case 'primary':
@@ -83,6 +145,9 @@ export default function WalletStatus() {
 
       case 'external':
         return `${baseStyles} bg-violet-500/20 text-violet-400 hover:bg-violet-500/30 focus:ring-violet-500`;
+
+      default:
+        return getButtonStyles('primary');
     }
   };
 
@@ -101,22 +166,30 @@ export default function WalletStatus() {
       case WALLET_STATES.NO_WALLET:
         window.open('https://www.stellar.org/wallets', '_blank');
         break;
+
+      default:
+        break;
     }
   };
 
   return (
     <div className="flex items-center gap-4">
       <div className="flex items-center gap-3">
+        {/* Status dot */}
         <div
           className={`w-2 h-2 rounded-full transition-colors duration-200 ${
-            walletState === WALLET_STATES.CONNECTED ? 'bg-green-500'
-              : walletState === WALLET_STATES.CONNECTING ? 'bg-yellow-500 animate-pulse'
-                : walletState === WALLET_STATES.ERROR || walletState === WALLET_STATES.WRONG_NETWORK ? 'bg-red-500'
+            walletState === WALLET_STATES.CONNECTED
+              ? 'bg-green-500'
+              : walletState === WALLET_STATES.CONNECTING
+                ? 'bg-yellow-500 animate-pulse'
+                : walletState === WALLET_STATES.ERROR || walletState === WALLET_STATES.WRONG_NETWORK
+                  ? 'bg-red-500'
                   : 'bg-slate-600'
           }`}
           aria-hidden="true"
         />
 
+        {/* Wallet address or helper text */}
         {config.showAddress && walletData ? (
           <div className="flex flex-col">
             <span className="text-sm font-mono text-slate-300">{walletData.address}</span>
@@ -127,11 +200,11 @@ export default function WalletStatus() {
         )}
       </div>
 
-      <button
-        type="button"
-        onClick={handleClick}
+      <Button
+        variant={config.variant}
+        loading={config.loading}
         disabled={config.disabled}
-        className={getButtonStyles(config.buttonVariant)}
+        onClick={handleClick}
         aria-label={config.buttonText}
         aria-describedby="wallet-helper-text"
       >
@@ -159,7 +232,7 @@ export default function WalletStatus() {
           </svg>
         )}
         {config.buttonText}
-      </button>
+      </Button>
 
       <div className="sr-only" role="status" aria-live="polite">
         Wallet status:

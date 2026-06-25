@@ -1,3 +1,5 @@
+import Button from './Button';
+
 export default function ErrorBanner({
   variant = "server",
   title,
@@ -36,13 +38,9 @@ export default function ErrorBanner({
       </div>
       {actionLabel ? (
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={onAction}
-            className="inline-flex items-center justify-center rounded-xl bg-red-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-400 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-slate-950"
-          >
-            {actionLabel}
-          </button>
+          <Button variant="primary" onClick={onAction}>
+  Retry
+</Button>
         </div>
       ) : null}
     </div>
