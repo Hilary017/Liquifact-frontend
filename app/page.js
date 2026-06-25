@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import NavMenu from '../components/NavMenu';
 import { copy } from './copy/en';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";

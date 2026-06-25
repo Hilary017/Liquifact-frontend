@@ -224,6 +224,126 @@ describe("InvestMarketplace", () => {
 
     expect(loadInvoices).toHaveBeenCalledTimes(1);
   });
+
+  it("filters invoices by currency", async () => {
+    const invoices = [
+      { id: "inv-001", issuer: "A", amount: "100", currency: "USD", dueDate: "2026-06-15", yield: "5%", status: "Open" },
+      { id: "inv-002", issuer: "B", amount: "200", currency: "EUR", dueDate: "2026-07-01", yield: "6%", status: "Open" },
+      { id: "inv-003", issuer: "C", amount: "300", currency: "USD", dueDate: "2026-05-30", yield: "7%", status: "Open" },
+    ];
+
+    render(<InvestMarketplace loadInvoices={createDeferredLoader(invoices, 0)} />);
+    await flushTimers(0);
+
+    fireEvent.click(screen.getByLabelText("Filter by EUR"));
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    expect(screen.getByText("B")).toBeInTheDocument();
+  });
+
+  it("filters invoices by minimum yield", async () => {
+    const invoices = [
+      { id: "inv-001", issuer: "A", amount: "100", currency: "USD", dueDate: "2026-06-15", yield: "5.2%", status: "Open" },
+      { id: "inv-002", issuer: "B", amount: "200", currency: "EUR", dueDate: "2026-07-01", yield: "7.5%", status: "Open" },
+      { id: "inv-003", issuer: "C", amount: "300", currency: "USD", dueDate: "2026-05-30", yield: "9.1%", status: "Open" },
+    ];
+
+    render(<InvestMarketplace loadInvoices={createDeferredLoader(invoices, 0)} />);
+    await flushTimers(0);
+
+    fireEvent.change(screen.getByLabelText("Minimum yield percentage"), { target: { value: "6" } });
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+    expect(screen.getByText("B")).toBeInTheDocument();
+    expect(screen.getByText("C")).toBeInTheDocument();
+  });
+
+  it("filters invoices by maturity date range", async () => {
+    const invoices = [
+      { id: "inv-001", issuer: "A", amount: "100", currency: "USD", dueDate: "2026-06-15", yield: "5%", status: "Open" },
+      { id: "inv-002", issuer: "B", amount: "200", currency: "EUR", dueDate: "2026-07-01", yield: "6%", status: "Open" },
+    ];
+
+    render(<InvestMarketplace loadInvoices={createDeferredLoader(invoices, 0)} />);
+    await flushTimers(0);
+
+    fireEvent.change(screen.getByLabelText("Maturity date from"), { target: { value: "2026-07-01" } });
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    expect(screen.getByText("B")).toBeInTheDocument();
+  });
+
+  it("sorts invoices by yield descending", async () => {
+    const invoices = [
+      { id: "inv-001", issuer: "A", amount: "100", currency: "USD", dueDate: "2026-06-15", yield: "5%", status: "Open" },
+      { id: "inv-002", issuer: "B", amount: "200", currency: "EUR", dueDate: "2026-07-01", yield: "9%", status: "Open" },
+      { id: "inv-003", issuer: "C", amount: "300", currency: "USD", dueDate: "2026-05-30", yield: "7%", status: "Open" },
+    ];
+
+    render(<InvestMarketplace loadInvoices={createDeferredLoader(invoices, 0)} />);
+    await flushTimers(0);
+
+    fireEvent.change(screen.getByLabelText("Sort options"), { target: { value: "yield_desc" } });
+
+    const items = screen.getAllByRole("listitem");
+    expect(items).toHaveLength(3);
+    expect(items[0]).toHaveTextContent("9%");
+    expect(items[1]).toHaveTextContent("7%");
+    expect(items[2]).toHaveTextContent("5%");
+  });
+
+  it("shows empty filtered state message when no invoices match", async () => {
+    render(<InvestMarketplace loadInvoices={createDeferredLoader([], 0)} />);
+    await flushTimers(0);
+
+    expect(screen.getByText(/No investable invoices\./i)).toBeInTheDocument();
+  });
+
+  it("shows no-match message when filters eliminate all invoices", async () => {
+    const invoices = [
+      { id: "inv-001", issuer: "A", amount: "100", currency: "USD", dueDate: "2026-06-15", yield: "5%", status: "Open" },
+    ];
+
+    render(<InvestMarketplace loadInvoices={createDeferredLoader(invoices, 0)} />);
+    await flushTimers(0);
+
+    fireEvent.click(screen.getByLabelText("Filter by EUR"));
+
+    expect(screen.getByText("No invoices match your filters.")).toBeInTheDocument();
+    expect(screen.queryByRole("list")).not.toBeInTheDocument();
+  });
+
+  it("clears all filters and restores full list", async () => {
+    const invoices = [
+      { id: "inv-001", issuer: "A", amount: "100", currency: "USD", dueDate: "2026-06-15", yield: "5%", status: "Open" },
+      { id: "inv-002", issuer: "B", amount: "200", currency: "EUR", dueDate: "2026-07-01", yield: "6%", status: "Open" },
+    ];
+
+    render(<InvestMarketplace loadInvoices={createDeferredLoader(invoices, 0)} />);
+    await flushTimers(0);
+
+    fireEvent.click(screen.getByLabelText("Filter by EUR"));
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+
+    fireEvent.click(screen.getByLabelText("Clear all filters"));
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+  });
+
+  it("announces filtered results in the live region", async () => {
+    const invoices = [
+      { id: "inv-001", issuer: "A", amount: "100", currency: "USD", dueDate: "2026-06-15", yield: "5%", status: "Open" },
+      { id: "inv-002", issuer: "B", amount: "200", currency: "EUR", dueDate: "2026-07-01", yield: "6%", status: "Open" },
+    ];
+
+    render(<InvestMarketplace loadInvoices={createDeferredLoader(invoices, 0)} />);
+    await flushTimers(0);
+
+    expect(screen.getByRole("status")).toHaveTextContent("2 investable invoices loaded");
+
+    fireEvent.click(screen.getByLabelText("Filter by EUR"));
+
+    expect(screen.getByRole("status")).toHaveTextContent("1 of 2 invoices match");
+  });
 });
 
 describe("getInvoiceLoadAnnouncement", () => {

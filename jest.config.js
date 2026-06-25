@@ -3,7 +3,7 @@ const config = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
-    '^next/link$': '<rootDir>/__mocks__/next-link.jsx',
+    '^next/link$': '<rootDir>/__mocks__/next-link.js',
     '^next/font/google$': '<rootDir>/__mocks__/next-font-google.js',
   },
   testPathIgnorePatterns: ['/node_modules/', '/.next/', '<rootDir>/tests/'],

@@ -4,8 +4,8 @@ import {
   getInvoiceLoadAnnouncement,
   InvestMarketplace,
   default as InvestPage,
-} from "./page";
-import { getInvoiceById, loadMockInvoices } from "./lib";
+} from "../page";
+import { getInvoiceById, loadMockInvoices } from "../lib";
 
 jest.mock("next/link", () => {
   function MockLink({ href, children, ...props }) {
