@@ -80,6 +80,22 @@ curl -X POST -F "invoice=@invoice.pdf" http://localhost:3001/invoices
 ```
 
 ---
+## Mock Data Wiring
+
+The frontend currently uses mock invoice data during development. The fixtures are defined in `app/invest/lib.js` which populates the global `window.__TEST_MOCK_INVOICES__` array. This array is consumed by the investment marketplace components to render invoices without a real backend. The `UploadZone.jsx` component posts to `${API_URL}/invoices`, but the response is simulated by the mock layer.
+
+### Source
+- **Fixture source**: `app/invest/lib.js` defines `window.__TEST_MOCK_INVOICES__`.
+- **Health helper**: `lib/api/health.js` provides a real fetch wrapper for the health check.
+
+### Consumption
+- Components import the mock via `import '@/app/invest/lib'` which populates the global variable.
+- The mock is used in the investment marketplace pages to display invoice listings.
+
+### Environment Hook
+- The mock is activated when `NEXT_PUBLIC_API_URL` points to the default `http://localhost:3001` and no real backend is reachable.
+
+---
 
 ## Invoice Resource Contract
 
