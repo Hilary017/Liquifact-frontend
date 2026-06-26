@@ -28,7 +28,7 @@ jest.mock("../components/ToastProvider", () => ({
   },
 }));
 
-jest.mock("../components/WalletContext", () => ({
+jest.mock("../components/WalletProvider", () => ({
   WalletProvider({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   },
