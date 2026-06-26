@@ -1,3 +1,4 @@
+// client directive
 "use client";
 import Button from '@/components/Button';
 import { useCallback, useEffect, useRef, useState } from "react";

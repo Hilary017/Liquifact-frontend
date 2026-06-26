@@ -15,11 +15,12 @@ function generateSitemap() {
 
 export async function GET() {
   const sitemap = generateSitemap();
+  const headers = new Headers({
+    'Content-Type': 'application/xml',
+  });
   return new NextResponse(sitemap, {
     status: 200,
-    headers: {
-      'Content-Type': 'application/xml',
-    },
+    headers,
   });
 }
 

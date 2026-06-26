@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useState, useContext } from 'react';
-import { useWallet } from './WalletContext';
-import { ToastContext } from './ToastProvider';
+import { useState } from 'react';
 import Button from './Button';
+import { useToast } from './ToastProvider';
 import { copy } from '../app/copy/en';
 
 // Wallet connection states defined locally to prevent mock pollution / circular dependencies
@@ -251,41 +250,20 @@ export default function WalletStatus() {
         </div>
       )}
 
-      {/* Main wallet status container */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-3">
-          {/* Status dot */}
-          <div
-            className={`w-2 h-2 rounded-full transition-colors duration-200 ${
-              rawState === WALLET_STATES.CONNECTED
-                ? 'bg-green-500'
-                : rawState === WALLET_STATES.CONNECTING
-                  ? 'bg-yellow-500 animate-pulse'
-                  : rawState === WALLET_STATES.ERROR || rawState === WALLET_STATES.WRONG_NETWORK
-                    ? 'bg-red-500'
-                    : 'bg-slate-600'
-            }`}
-            aria-hidden="true"
-          />
-
-          {/* Wallet address or helper text */}
-          {config.showAddress && walletData ? (
-            <div className="flex flex-col">
-              <span className="text-sm font-mono text-slate-300">
-                {config.displayAddress || walletData.address}
-              </span>
-              {walletData.balance && (
-                <span className="text-xs text-slate-500">{walletData.balance}</span>
-              )}
-            </div>
-          ) : (
-            <span className="text-sm text-slate-400 max-w-xs">{config.helperText}</span>
-          )}
-        </div>
+      <div className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4">
+        {/* Wallet address or helper text */}
+        {config.showAddress && walletData ? (
+          <div className="flex flex-col">
+            <span className="text-sm font-mono text-slate-300">{walletData.address}</span>
+            <span className="text-xs text-slate-500">{walletData.balance}</span>
+          </div>
+        ) : (
+          <span className="text-sm text-slate-400 max-w-xs">{config.helperText}</span>
+        )}
 
         <Button
           variant={config.buttonVariant}
-          loading={rawState === WALLET_STATES.CONNECTING}
+          loading={walletState === WALLET_STATES.CONNECTING}
           disabled={config.disabled}
           onClick={handleClick}
           aria-label={config.buttonText}

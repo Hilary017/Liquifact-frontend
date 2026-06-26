@@ -5,6 +5,7 @@ import Link from 'next/link';
 import NavMenu from '../components/NavMenu';
 
 import { copy } from './copy/en';
+import NavMenu from '@/components/NavMenu';
 import { getHealth } from '../lib/api/health';
 import { safeJsonStringify } from '../lib/format/safeJson';
 
