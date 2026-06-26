@@ -37,4 +37,14 @@ describe("InvoiceListSkeleton", () => {
       expect(item.className).toContain("animate-pulse");
     });
   });
+
+  it("verifies the stable, deterministic key strategy for list items", () => {
+    const element = InvoiceListSkeleton({ rows: 4 });
+    const listItems = element.props.children;
+    expect(listItems).toHaveLength(4);
+    listItems.forEach((item, i) => {
+      expect(item.key).toBe(`skeleton-row-${i}`);
+    });
+  });
 });
+

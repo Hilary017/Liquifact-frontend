@@ -16,7 +16,8 @@ export default function InvoiceListSkeleton({ rows = 3 }) {
     >
       {Array.from({ length: rows }).map((_, i) => (
         <li
-          key={i}
+          // Use a prefix with index for a stable, deterministic skeleton key since rows are presentational-only
+          key={`skeleton-row-${i}`}
           className="rounded-xl border border-slate-800 bg-slate-900/50 p-5 animate-pulse"
         >
           {/* Row: issuer + status badge */}
