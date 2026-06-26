@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import Button from '@/components/Button';
 
 import Button from '@/components/Button'
@@ -10,7 +10,7 @@ import Pagination from "@/components/Pagination";
 import Button from '@/components/Button'
 import { copy } from "../copy/en";
 import Button from '@/components/Button'
-import { loadMockInvoices } from "./lib";
+import { fetchInvestableInvoices } from "../../lib/api/invoices";
 
 /**
  * Number of invoices rendered per page.  Export allows tests to reference
@@ -114,7 +114,7 @@ export function getPaginationAnnouncement(shown, total) {
  *   invoice array.  Defaults to the mock loader; injectable for testing.
  * @returns {JSX.Element}
  */
-export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
+export function InvestMarketplace({ loadInvoices = fetchInvestableInvoices }) {
   const [invoices, setInvoices] = useState(null); // null = loading
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [paginationAnnouncement, setPaginationAnnouncement] = useState("");
@@ -123,16 +123,17 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
-  /** Ref forwarded to the "Load more" button for focus management. */
+  /** Ref forwarded to the \"Load more\" button for focus management. */
   const loadMoreRef = useRef(null);
 
-  // â”€â”€ Fetch invoices â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ——————————————————————————————————————————————————————————————————————————
   useEffect(() => {
+    const controller = new AbortController();
     let isActive = true;
 
     const announceLoadCompletion = async () => {
       try {
-        const nextInvoices = await loadInvoices();
+        const nextInvoices = await loadInvoices({ signal: controller.signal });
 
         if (!isActive) {
           return;
@@ -158,10 +159,11 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
 
     return () => {
       isActive = false;
+      controller.abort();
     };
   }, [loadInvoices]);
 
-  // â”€â”€ Reset paging when a new invoice set arrives â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ——————————————————————————————————————————————————————————————————————————
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery);
