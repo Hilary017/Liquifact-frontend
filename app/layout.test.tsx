@@ -89,6 +89,7 @@ describe("Skip-to-content link", () => {
       <SkipLinkFixture>
         <main id="main-content">
           <a href="/invoices">Invoices</a>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- fixture intentionally uses plain anchors to test DOM order */}
           <a href="/invest">Invest</a>
         </main>
       </SkipLinkFixture>

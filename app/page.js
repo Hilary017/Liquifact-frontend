@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
+import NavMenu from '../components/NavMenu';
 import { copy } from './copy/en';
 import { getHealth } from '../lib/api/health';
 
@@ -123,4 +124,3 @@ export default function Home() {
     </div>
   );
 }
-

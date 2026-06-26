@@ -1,21 +1,19 @@
-﻿"use client";
+"use client";
 
-import Button from '@/components/Button'
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Button from '@/components/Button'
-import { useParams, notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import ErrorBanner from "@/components/ErrorBanner";
 import InvoiceListSkeleton from "@/components/InvoiceListSkeleton";
 import WalletStatus from "@/components/WalletStatus";
-import Button from '@/components/Button'
 import { useWallet, WALLET_STATES } from "@/components/WalletContext";
-import Button from '@/components/Button'
-import { copy } from "../../copy/en";
-import Button from '@/components/Button'
+import {
+  INVALID_VALUE_FALLBACK,
+  formatAmount,
+  formatCurrency,
+} from "@/lib/format/currency";
 import { getInvoiceById } from "../lib";
 
-// DEV-only delay (ms) to make the skeleton visible during local development.
 const DEV_DELAY = process.env.NODE_ENV === "development" ? 800 : 0;
 
 function loadInvoiceById(id) {
@@ -24,10 +22,17 @@ function loadInvoiceById(id) {
   });
 }
 
+function formatYield(value) {
+  const formattedYield = formatAmount(value);
+  return formattedYield === INVALID_VALUE_FALLBACK
+    ? formattedYield
+    : `${formattedYield}%`;
+}
+
 export function InvoiceDetail({ loadInvoice = loadInvoiceById }) {
   const params = useParams();
   const id = params?.id;
-  const [invoice, setInvoice] = useState(null); // null = loading
+  const [invoice, setInvoice] = useState(null);
   const [loadError, setLoadError] = useState("");
   const { state: walletState, connect } = useWallet();
 
@@ -89,7 +94,7 @@ export function InvoiceDetail({ loadInvoice = loadInvoiceById }) {
           href="/"
           className="inline-block py-3 text-xl font-semibold tracking-tight text-cyan-400 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400 rounded"
         >
-          â† LiquiFact
+          &larr; LiquiFact
         </Link>
         <WalletStatus />
       </header>
@@ -100,7 +105,7 @@ export function InvoiceDetail({ loadInvoice = loadInvoiceById }) {
           className="inline-block mb-6 text-sm text-slate-400 hover:text-cyan-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400 rounded"
           aria-label="Back to marketplace"
         >
-          â† Back to marketplace
+          &larr; Back to marketplace
         </Link>
 
         <h1 className="text-2xl font-bold mb-2">Invoice details</h1>
@@ -133,12 +138,16 @@ export function InvoiceDetail({ loadInvoice = loadInvoiceById }) {
                 <div>
                   <dt className="text-slate-500">Amount</dt>
                   <dd className="text-slate-100">
-                    {invoice.currency} {invoice.amount}
+                    {formatCurrency(invoice.amount, {
+                      currency: invoice.currency,
+                    })}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-slate-500">Estimated yield</dt>
-                  <dd className="text-slate-100">{invoice.yield}</dd>
+                  <dd className="text-slate-100">
+                    {formatYield(invoice.yield)}
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-slate-500">Maturity date</dt>
@@ -176,4 +185,3 @@ export function InvoiceDetail({ loadInvoice = loadInvoiceById }) {
 export default function InvoiceDetailPage() {
   return <InvoiceDetail />;
 }
-

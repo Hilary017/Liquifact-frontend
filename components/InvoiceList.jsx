@@ -93,7 +93,6 @@ export default function InvoiceList({
 }) {
   const [invoices, setInvoices] = useState(null);
   const [loadError, setLoadError] = useState('');
-  const [statusMessage, setStatusMessage] = useState('');
 
   const mergedInvoices = useMemo(
     () => mergeInvoices(optimisticInvoices, invoices ?? []),
@@ -102,8 +101,6 @@ export default function InvoiceList({
 
   useEffect(() => {
     let active = true;
-    setInvoices(null);
-    setLoadError('');
 
     async function load() {
       try {
@@ -128,19 +125,11 @@ export default function InvoiceList({
     };
   }, [loadInvoices]);
 
-  useEffect(() => {
-    if (loadError) {
-      setStatusMessage('Invoice list failed to load.');
-      return;
-    }
-
-    if (invoices === null) {
-      setStatusMessage('Loading invoices.');
-      return;
-    }
-
-    setStatusMessage(getInvoiceAnnouncement(mergedInvoices));
-  }, [invoices, mergedInvoices, loadError]);
+  const statusMessage = loadError
+    ? 'Invoice list failed to load.'
+    : invoices === null
+      ? 'Loading invoices.'
+      : getInvoiceAnnouncement(mergedInvoices);
 
   if (loadError) {
     return (
