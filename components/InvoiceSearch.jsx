@@ -1,34 +1,40 @@
-import React from "react";
+"use client";
 
-export default function InvoiceSearch({
-  searchTerm,
-  onSearchChange,
-  sortOption,
-  onSortChange,
-  filters,
-  onFiltersChange,
-}) {
+/**
+ * InvoiceSearch — A controlled search input for filtering invoices by issuer name.
+ *
+ * Renders a labelled search field styled to match the existing slate/cyan
+ * marketplace theme. A clear button appears when the input has a value.
+ *
+ * @param {Object} props
+ * @param {string} props.value  - Current search query (controlled by parent).
+ * @param {(value: string) => void} props.onChange - Called with the new value on every keystroke.
+ * @param {string} [props.placeholder] - Placeholder text for the input.
+ */
+export default function InvoiceSearch({ value, onChange, placeholder }) {
   return (
-    <div className="mb-8 rounded-xl border border-slate-800 bg-slate-900/30 p-6">
-      {/* Search Input */}
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Search invoices..."
-          value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-        />
-      </div>
-      {/* Future Sort & Filter controls (currently disabled) */}
-      <div className="flex flex-wrap gap-4 items-center opacity-60">
-        <button type="button" disabled className="rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-2 text-sm text-slate-500">
-          Sort: {sortOption || "Best Yield"}
+    <div className="flex items-center gap-2">
+      <label htmlFor="issuer-search" className="sr-only">
+        Search by issuer name
+      </label>
+      <input
+        id="issuer-search"
+        type="search"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder || "Search issuer\u2026"}
+        className="rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-colors"
+      />
+      {value ? (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          className="rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm text-cyan-400 hover:bg-slate-700/50 transition-colors"
+          aria-label="Clear search"
+        >
+          Clear
         </button>
-        <button type="button" disabled className="rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-2 text-sm text-slate-500">
-          Filters: {filters.length > 0 ? filters.join(", ") : "None"}
-        </button>
-      </div>
+      ) : null}
     </div>
   );
 }
