@@ -262,6 +262,85 @@ Handling network-level and unpredictable failures is critical to maintaining a r
 
 ---
 
+## Retry Mechanism
+
+The frontend uses `fetchWithRetry` — a configurable retry-with-exponential-backoff wrapper around the native `fetch` API — to handle transient network failures gracefully.
+
+### Source
+- **Module**: `lib/api/fetchWithRetry.js`
+
+### Behavior
+- **Retries on**: Network errors (fetch rejected) and **5xx** server errors.
+- **Does NOT retry on**: **4xx** client errors (400, 404, 429, etc.) because these indicate a problem with the request itself, not a transient condition.
+- **AbortSignal**: If the request is aborted (via `AbortController`), retries stop immediately.
+- **Idempotency**: Only idempotent methods (`GET`, `HEAD`, `PUT`, `DELETE`, `OPTIONS`, `TRACE`) are retried by default. Non-idempotent methods (`POST`, `PATCH`) pass through without retry to avoid duplicate side effects. Set `retryNonIdempotent: true` to override.
+
+### Algorithm
+
+```
+attempt = 0
+while attempt < maxAttempts:
+  try:
+    response = await fetch(url, options)
+    if response.ok: return response
+    if not shouldRetry(response): return response
+  catch error:
+    if error is AbortError: throw error
+    if not shouldRetry(error): throw error
+    if last attempt: throw error
+  
+  delay = delayFn(attempt, baseDelayMs)  // exponential backoff + jitter
+  await sleep(delay)
+  attempt++
+```
+
+### Default Configuration
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `maxAttempts` | `3` | Total number of fetch attempts (1 initial + 2 retries) |
+| `baseDelayMs` | `1000` | Base delay in milliseconds for exponential backoff |
+| `delayFn` | Exponential backoff with full jitter | `delay = random(0, baseDelay * 2^attempt)` |
+| `shouldRetry` | Network errors + 5xx only | Called with `(error, response)`, returns `boolean` |
+| `retryNonIdempotent` | `false` | If `true`, also retries POST/PATCH |
+
+### Usage Examples
+
+**Basic usage (defaults):**
+```javascript
+import { fetchWithRetry } from '@/lib/api/fetchWithRetry';
+
+const response = await fetchWithRetry('/api/invoices');
+```
+
+**With custom configuration:**
+```javascript
+const response = await fetchWithRetry(
+  '/api/invoices',
+  { signal: controller.signal },
+  { maxAttempts: 5, baseDelayMs: 200 },
+);
+```
+
+**Custom retry predicate:**
+```javascript
+import { fetchWithRetry } from '@/lib/api/fetchWithRetry';
+
+const response = await fetchWithRetry('/api/invoices', {}, {
+  shouldRetry: (error, response) => {
+    // Retry on 429 (rate limit) in addition to defaults
+    if (response && response.status === 429) return true;
+    if (error) return true;
+    return false;
+  },
+});
+```
+
+### Currently using `fetchWithRetry`
+- `lib/api/health.js` — `getHealth()` uses `{ maxAttempts: 2, baseDelayMs: 500 }` for quick health-check retries.
+
+---
+
 ## Contract Version
 
 **Version:** v1.0
