@@ -35,8 +35,10 @@ When adding or modifying UI:
 - [ ] Verify colour contrast meets **AA** ratios (4.5:1 text, 3:1 large text).
 - [ ] Add `role="status"` or `aria-live="polite"` for dynamic feedback.
 - [ ] Test keyboard navigation (Tab, Shift+Tab, Enter, Space) across the component.
+- [ ] Prefer semantic key/value structures (e.g. `<dl>/<dt>/<dd>`) for assistive-technology friendly “label + value” facts.
 - [ ] Run `npm run test:accessibility` locally and fix any violations.
 - [ ] Document any known accessibility gaps in this statement.
+
 
 ## Maintenance
 

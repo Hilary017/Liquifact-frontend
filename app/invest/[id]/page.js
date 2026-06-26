@@ -1,18 +1,12 @@
 ﻿"use client";
 
-import Button from '@/components/Button'
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Button from '@/components/Button'
 import { useParams, notFound } from "next/navigation";
 import ErrorBanner from "@/components/ErrorBanner";
 import InvoiceListSkeleton from "@/components/InvoiceListSkeleton";
 import WalletStatus from "@/components/WalletStatus";
-import Button from '@/components/Button'
 import { useWallet, WALLET_STATES } from "@/components/WalletContext";
-import Button from '@/components/Button'
-import { copy } from "../../copy/en";
-import Button from '@/components/Button'
 import { getInvoiceById } from "../lib";
 
 // DEV-only delay (ms) to make the skeleton visible during local development.
@@ -130,6 +124,10 @@ export function InvoiceDetail({ loadInvoice = loadInvoiceById }) {
                 {invoice.issuer}
               </h2>
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <dt className="text-slate-500">Issuer</dt>
+                  <dd className="text-slate-100">{invoice.issuer}</dd>
+                </div>
                 <div>
                   <dt className="text-slate-500">Amount</dt>
                   <dd className="text-slate-100">
