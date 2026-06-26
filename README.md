@@ -439,13 +439,15 @@ The home page health check now:
 - Uses an 8 second timeout.
 - Aborts hung requests.
 - Safely handles HTML and malformed JSON responses.
-- Reports one of the following:
+- Reports one of the following status states with distinct visual treatments:
 
-  - Connected
-  - Degraded
-  - Unreachable
+  - **Connected** (green badge with ✓ icon) — Backend is healthy and responding correctly
+  - **Degraded** (amber badge with ⚠ icon) — Backend responded but with an error status (e.g., HTTP 500)
+  - **Unreachable** (red badge with ✕ icon) — Backend could not be reached or request timed out
 
-- Provides a detailed disclosure for raw responses.
+- Provides a detailed disclosure for raw responses behind an expandable `<details>` element
+- Status changes are announced politely via `aria-live="polite"` for accessibility
+- Badges include both color and text/icons (not color-only) to meet accessibility requirements
 
 ## Contracts
 

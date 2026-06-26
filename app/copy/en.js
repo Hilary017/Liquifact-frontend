@@ -10,6 +10,13 @@ export const copy = {
     apiStatus: "API status",
     checkApiHealth: "Check backend health",
     checking: "Checking\u2026",
+    // Health status states - maps to getHealth return values
+    healthStatus: {
+      connected: "Connected",
+      degraded: "Degraded",
+      unreachable: "Unreachable",
+      viewDetails: "View details",
+    },
   },
   invest: {
     title: "Invest",
