@@ -262,9 +262,75 @@ Handling network-level and unpredictable failures is critical to maintaining a r
 
 ---
 
+---
+
+## Request Cancellation Guard
+
+### Problem
+
+The home page health check is triggered by a button click and resolves asynchronously. If the component unmounts (navigation, hot-reload, React strict-mode double-mount) before the response arrives, the pending `setHealth` / `setLoading` calls land on an unmounted component — causing the classic "state update on unmounted component" warning and potential memory leaks.
+
+### Solution: AbortController + mounted guard
+
+`getHealth` accepts an optional `signal` option. Passing a component-owned `AbortSignal` lets the function cancel the in-flight network request immediately on unmount and re-throw the resulting `AbortError` so the caller can skip state updates entirely.
+
+#### `lib/api/health.js` — external signal support
+
+```js
+// Propagate external abort into the internal controller
+if (signal) {
+  signal.addEventListener('abort', () => controller.abort(signal.reason), { once: true });
+}
+
+// In the catch block:
+if (err?.name === 'AbortError') {
+  if (signal?.aborted) throw err;          // caller's signal — rethrow
+  return { status: 'unreachable', ... };   // internal timeout — return status
+}
+```
+
+#### `app/page.js` — component-side guard
+
+```js
+const abortRef = useRef(null);
+
+// Abort on unmount
+useEffect(() => () => abortRef.current?.abort(), []);
+
+const checkApi = async () => {
+  abortRef.current?.abort();               // cancel any previous request
+  const controller = new AbortController();
+  abortRef.current = controller;
+
+  setLoading(true);
+  try {
+    const result = await getHealth(API_URL, { signal: controller.signal });
+    if (controller.signal.aborted) return; // race-condition guard
+    setHealth(result);
+  } catch (err) {
+    if (err?.name === 'AbortError') return; // non-error: unmount or re-click
+  } finally {
+    if (!controller.signal.aborted) setLoading(false);
+  }
+};
+```
+
+### Why both signal and post-await guard?
+
+| Guard | Catches |
+|---|---|
+| `signal` passed to `getHealth` | Cancels the network request; `getHealth` re-throws `AbortError` |
+| `controller.signal.aborted` after `await` | Handles the narrow window where the response resolves between the `await` and the setter |
+
+### Abort is a non-error
+
+An `AbortError` caused by unmount (or a second click) is silently ignored — no error banner, no toast, no console warning.
+
+---
+
 ## Contract Version
 
-**Version:** v1.0
-**Last updated:** Documentation Update
+**Version:** v1.1
+**Last updated:** 2026-06-26
 
 This contract reflects the mocked frontend state as of today and sets the baseline for the upcoming full backend integration.

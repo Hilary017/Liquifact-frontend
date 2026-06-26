@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import NavMenu from '@/components/NavMenu';
+import NavMenu from '../components/NavMenu';
 
 import { copy } from './copy/en';
 import { getHealth } from '../lib/api/health';
@@ -47,15 +47,30 @@ const KNOWN_FIELDS = ['status', 'message', 'version'];
 export default function Home() {
   const [health, setHealth] = useState(null);
   const [loading, setLoading] = useState(false);
+  const abortRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
 
   const checkApi = async () => {
-    setLoading(true);
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
+    setLoading(true);
     try {
-      const result = await getHealth(API_URL);
+      const result = await getHealth(API_URL, { signal: controller.signal });
+      if (controller.signal.aborted) return;
       setHealth(result);
+    } catch (err) {
+      if (err?.name === 'AbortError') return;
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) {
+        setLoading(false);
+      }
     }
   };
 
