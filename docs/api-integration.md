@@ -262,6 +262,21 @@ Handling network-level and unpredictable failures is critical to maintaining a r
 
 ---
 
+## Payload Safety & Truncation Guards
+
+To prevent client-side performance degradation or Denial of Service (DoS) attacks from oversized or deeply nested backend payloads, the frontend uses safety guards in the `lib/format/safeJson` utility module.
+
+### Safe JSON Formatting Utilities
+
+These utilities clean, depth-limit, and truncate data before rendering or parsing:
+
+- **`truncateString(value, maxLength)`**: Limits the character length of a coerced string (default: 2000 characters). If the string exceeds the limit, it is sliced and appended with a `…(truncated)` marker.
+- **`limitDepth(obj, maxDepth)`**: Traverses an object or array and replaces any node nesting deeper than `maxDepth` (default: 5) with `"[Depth limit reached]"`. It also detects circular references and replaces them with `"[Circular]"` to prevent serialization crashes.
+- **`extractKnownFields(obj, fields)`**: Filters an object to only include specified allowed keys (default: `['status', 'message', 'version']`), ignoring other fields.
+- **`safeJsonStringify(obj, options)`**: Wraps the depth limitation, standard serialization, and truncation workflows into a single helper. In case of unexpected serialization errors (e.g. nested BigInts), it gracefully falls back to a plain string representation of the object.
+
+---
+
 ## Contract Version
 
 **Version:** v1.0

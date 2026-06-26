@@ -59,8 +59,8 @@ describe('Button', () => {
   it('is disabled when disabled prop is true', () => {
     render(<Button disabled>Disabled</Button>);
     expect(screen.getByRole('button')).toBeDisabled();
-    expect(screen.getByRole('button')).toHaveClass('opacity-50');
-    expect(screen.getByRole('button')).toHaveClass('cursor-not-allowed');
+    expect(screen.getByRole('button')).toHaveClass('disabled:opacity-50');
+    expect(screen.getByRole('button')).toHaveClass('disabled:cursor-not-allowed');
   });
 
   it('is disabled and shows spinner when loading', () => {

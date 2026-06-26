@@ -1,18 +1,14 @@
-﻿"use client";
+"use client";
 
-import Button from '@/components/Button'
+import Button from '@/components/Button';
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Button from '@/components/Button'
 import { useParams, notFound } from "next/navigation";
 import ErrorBanner from "@/components/ErrorBanner";
 import InvoiceListSkeleton from "@/components/InvoiceListSkeleton";
 import WalletStatus from "@/components/WalletStatus";
-import Button from '@/components/Button'
 import { useWallet, WALLET_STATES } from "@/components/WalletContext";
-import Button from '@/components/Button'
 import { copy } from "../../copy/en";
-import Button from '@/components/Button'
 import { getInvoiceById } from "../lib";
 
 // DEV-only delay (ms) to make the skeleton visible during local development.

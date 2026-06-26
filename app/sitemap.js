@@ -22,3 +22,12 @@ export async function GET() {
     },
   });
 }
+
+export default function sitemap() {
+  return routes.map((path) => ({
+    url: `${baseUrl}${path}`,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.8,
+  }));
+}

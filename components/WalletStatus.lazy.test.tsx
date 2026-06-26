@@ -5,6 +5,7 @@ import '@testing-library/jest-dom';
 
 // ── Mock next/dynamic so we can control lazy-load timing in tests ──
 jest.mock('next/dynamic', () => {
+  const React = require('react');
   return function dynamicMock(importFunc: () => Promise<any>, options: any) {
     const LazyComponent = React.lazy(importFunc);
 
@@ -64,6 +65,14 @@ jest.mock('./WalletContext', () => ({
     WRONG_NETWORK: 'wrong_network',
     NO_WALLET: 'no_wallet',
   },
+}));
+
+jest.mock('./ToastProvider', () => ({
+  useToast: () => ({
+    success: jest.fn(),
+    error: jest.fn(),
+    info: jest.fn(),
+  }),
 }));
 
 // Import after mocks are set up

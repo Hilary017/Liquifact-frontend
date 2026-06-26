@@ -21,11 +21,16 @@ jest.mock("../components/Footer", () => {
   return MockFooter;
 });
 
-jest.mock("../components/ToastProvider", () => ({
-  ToastProvider({ children }: { children: React.ReactNode }) {
-    return <>{children}</>;
-  },
-}));
+jest.mock("../components/ToastProvider", () => {
+  const React = require("react");
+  const ToastContext = React.createContext(null);
+  return {
+    ToastProvider({ children }: { children: React.ReactNode }) {
+      return <>{children}</>;
+    },
+    ToastContext,
+  };
+});
 
 jest.mock("../components/WalletContext", () => ({
   WalletProvider({ children }: { children: React.ReactNode }) {

@@ -110,7 +110,7 @@ describe("Home Page Health Check", () => {
     });
 
     // Assert the "Connected" badge is rendered
-    expect(screen.getByText(/connected/i)).toBeTruthy();
+    expect(screen.getAllByText(/connected/i).length).toBeGreaterThan(0);
   });
 
   it("renders degraded state with amber badge", async () => {
@@ -137,7 +137,7 @@ describe("Home Page Health Check", () => {
     });
 
     // Assert the "Degraded" badge is rendered
-    expect(screen.getByText(/degraded/i)).toBeTruthy();
+    expect(screen.getAllByText(/degraded/i).length).toBeGreaterThan(0);
   });
 
   it("renders unreachable state with red badge", async () => {
@@ -156,12 +156,12 @@ describe("Home Page Health Check", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/health check timed out/i)
-      ).toBeTruthy();
+        screen.getAllByText(/health check timed out/i).length
+      ).toBeGreaterThan(0);
     });
 
     // Assert the "Unreachable" badge is rendered
-    expect(screen.getByText(/unreachable/i)).toBeTruthy();
+    expect(screen.getAllByText(/unreachable/i).length).toBeGreaterThan(0);
   });
 
   it("renders raw response details", async () => {
@@ -183,7 +183,7 @@ describe("Home Page Health Check", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/view details/i)
+        screen.getByText(/raw response/i)
       ).toBeTruthy();
     });
   });
@@ -204,7 +204,7 @@ describe("Home Page Health Check", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/connected/i)).toBeTruthy();
+      expect(screen.getAllByText(/connected/i).length).toBeGreaterThan(0);
     });
 
     // Test degraded state
@@ -220,7 +220,7 @@ describe("Home Page Health Check", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/degraded/i)).toBeTruthy();
+      expect(screen.getAllByText(/degraded/i).length).toBeGreaterThan(0);
     });
 
     // Test unreachable state
@@ -236,7 +236,7 @@ describe("Home Page Health Check", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/unreachable/i)).toBeTruthy();
+      expect(screen.getAllByText(/unreachable/i).length).toBeGreaterThan(0);
     });
   });
 

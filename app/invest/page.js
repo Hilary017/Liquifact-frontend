@@ -1,16 +1,14 @@
 "use client";
 import Button from '@/components/Button';
-
-import Button from '@/components/Button'
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 import ErrorBanner from "@/components/ErrorBanner";
 import InvoiceListSkeleton from "@/components/InvoiceListSkeleton";
 import Pagination from "@/components/Pagination";
-import Button from '@/components/Button'
 import { copy } from "../copy/en";
-import Button from '@/components/Button'
 import { fetchInvestableInvoices } from "../../lib/api/invoices";
+import InvoiceSearch from "@/components/InvoiceSearch";
+import InvoiceFilters, { DEFAULT_FILTERS, hasActiveFilters } from "@/components/InvoiceFilters";
 
 /**
  * Number of invoices rendered per page.  Export allows tests to reference
@@ -171,7 +169,116 @@ export function InvestMarketplace({ loadInvoices = fetchInvestableInvoices }) {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // â”€â”€ Load-more handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Reset paging when filters change
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+    setPaginationAnnouncement("");
+  }, [debouncedQuery, filters]);
+
+  // ——————————————————————————————————————————————————————————————————————————
+  const allInvoices = useMemo(() => Array.isArray(invoices) ? invoices : [], [invoices]);
+
+  const filteredInvoices = useMemo(() => {
+    if (!Array.isArray(invoices)) return [];
+
+    let result = invoices;
+
+    if (debouncedQuery.trim()) {
+      const q = debouncedQuery.trim().toLowerCase();
+      result = result.filter((inv) => inv.issuer.toLowerCase().includes(q));
+    }
+
+    if (filters.yieldMin !== "") {
+      const min = parseFloat(filters.yieldMin);
+      if (!isNaN(min)) {
+        result = result.filter((inv) => {
+          const y = parseFloat(inv.yield);
+          return !isNaN(y) && y >= min;
+        });
+      }
+    }
+
+    if (filters.yieldMax !== "") {
+      const max = parseFloat(filters.yieldMax);
+      if (!isNaN(max)) {
+        result = result.filter((inv) => {
+          const y = parseFloat(inv.yield);
+          return !isNaN(y) && y <= max;
+        });
+      }
+    }
+
+    if (filters.currency) {
+      result = result.filter((inv) => inv.currency === filters.currency);
+    }
+
+    if (filters.maturityFrom) {
+      const from = new Date(filters.maturityFrom);
+      result = result.filter((inv) => new Date(inv.dueDate) >= from);
+    }
+
+    if (filters.maturityTo) {
+      const to = new Date(filters.maturityTo);
+      result = result.filter((inv) => new Date(inv.dueDate) <= to);
+    }
+
+    if (filters.sort) {
+      result = [...result].sort((a, b) => {
+        switch (filters.sort) {
+          case "yield_desc":
+            return parseFloat(b.yield) - parseFloat(a.yield);
+          case "yield_asc":
+            return parseFloat(a.yield) - parseFloat(b.yield);
+          case "amount_desc":
+            return (
+              parseFloat(b.amount.replace(/,/g, "")) -
+              parseFloat(a.amount.replace(/,/g, ""))
+            );
+          case "amount_asc":
+            return (
+              parseFloat(a.amount.replace(/,/g, "")) -
+              parseFloat(b.amount.replace(/,/g, ""))
+            );
+          case "maturity_asc":
+            return new Date(a.dueDate) - new Date(b.dueDate);
+          case "maturity_desc":
+            return new Date(b.dueDate) - new Date(a.dueDate);
+          default:
+            return 0;
+        }
+      });
+    }
+
+    return result;
+  }, [invoices, debouncedQuery, filters]);
+
+  const visibleInvoices = useMemo(() => {
+    return filteredInvoices.slice(0, visibleCount);
+  }, [filteredInvoices, visibleCount]);
+
+  const filterActive = useMemo(() => {
+    return hasActiveFilters(filters) || Boolean(debouncedQuery.trim());
+  }, [filters, debouncedQuery]);
+
+  const baseStatusMessage = useMemo(() => {
+    if (loadError || invoices === null) {
+      return loadError ? copy.invest.errorStatus : "";
+    }
+    return getInvoiceLoadAnnouncement(allInvoices, {
+      filterActive,
+      filteredCount: filteredInvoices.length,
+    });
+  }, [loadError, invoices, allInvoices, filterActive, filteredInvoices.length]);
+
+  const statusMessage = paginationAnnouncement || baseStatusMessage;
+
+  const handleSearchChange = useCallback((value) => {
+    setSearchQuery(value);
+    setVisibleCount(PAGE_SIZE);
+    setPaginationAnnouncement("");
+  }, []);
+
+  // ——————————————————————————————————————————————————————————————————————————
   /**
    * Appends the next PAGE_SIZE items and updates the live-region status.
    * Focus is moved back to the "Load more" button (if it still exists) so
@@ -179,9 +286,9 @@ export function InvestMarketplace({ loadInvoices = fetchInvestableInvoices }) {
    */
   const handleLoadMore = useCallback(() => {
     setVisibleCount((prev) => {
-      const next = Math.min(prev + PAGE_SIZE, invoices?.length ?? prev);
-      const total = invoices?.length ?? 0;
-      setStatusMessage(getPaginationAnnouncement(next, total));
+      const next = Math.min(prev + PAGE_SIZE, filteredInvoices.length || prev);
+      const total = filteredInvoices.length;
+      setPaginationAnnouncement(getPaginationAnnouncement(next, total));
       return next;
     });
 
@@ -189,12 +296,7 @@ export function InvestMarketplace({ loadInvoices = fetchInvestableInvoices }) {
     setTimeout(() => {
       loadMoreRef.current?.focus();
     }, 0);
-  }, [invoices]);
-
-  // â”€â”€ Derived values â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const visibleInvoices = Array.isArray(invoices)
-    ? invoices.slice(0, visibleCount)
-    : [];
+  }, [filteredInvoices.length]);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -246,7 +348,7 @@ export function InvestMarketplace({ loadInvoices = fetchInvestableInvoices }) {
         ) : (
           <>
             <ul className="space-y-4">
-              {filteredInvoices.map((inv) => (
+              {visibleInvoices.map((inv) => (
                 <li key={inv.id}>
                   <Link
                     href={`/invest/${inv.id}`}

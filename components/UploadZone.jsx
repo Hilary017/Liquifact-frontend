@@ -3,6 +3,8 @@
 import { useRef, useState } from 'react';
 import { copy } from '../app/copy/en';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
 const FILE_CONSTRAINTS = {
   accept: '.pdf',
   mimeType: 'application/pdf',
@@ -273,8 +275,8 @@ function UploadZone({ onUploadSuccess }) {
       <button
         id="invoice-upload-btn"
         type="submit"
-        disabled={!file || !!error || isProcessing}
-        aria-disabled={!file || !!error || isProcessing}
+        disabled={!file || isProcessing}
+        aria-disabled={!file || isProcessing}
         className="mt-4 w-full rounded-xl bg-cyan-500 py-3 text-sm font-semibold text-slate-950 transition-all duration-200
           hover:bg-cyan-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400
           disabled:opacity-40 disabled:cursor-not-allowed"
