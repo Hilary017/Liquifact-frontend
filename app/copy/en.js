@@ -50,6 +50,7 @@ export const copy = {
     contactUrl: "mailto:support@liquifact.com",
     discord: "Discord Community",
     discordUrl: "https://discord.gg/JrGPH4V3",
+    discordUrl: "https://discord.gg/JrGPH4V3",
   },
   uploadZone: {
     requirementsTitle: "Upload requirements",

@@ -1,40 +1,25 @@
 // client directive
 "use client";
-import Button from '@/components/Button';
-import { useCallback, useEffect, useRef, useState } from "react";
+
+import { useCallback, useEffect, useRef, useState, Suspense } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ErrorBanner from "@/components/ErrorBanner";
 import InvoiceCard from "@/components/InvoiceCard";
 import InvoiceListSkeleton from "@/components/InvoiceListSkeleton";
 import Pagination from "@/components/Pagination";
+import InvoiceSearch from "@/components/InvoiceSearch";
+import InvoiceFilters, { DEFAULT_FILTERS, hasActiveFilters } from "@/components/InvoiceFilters";
 import { copy } from "../copy/en";
 import { fetchInvestableInvoices } from "../../lib/api/invoices";
 import InvoiceSearch from '@/components/InvoiceSearch';
 import InvoiceFilters, { DEFAULT_FILTERS } from '@/components/InvoiceFilters';
 import useInvoiceFilters from '../../lib/hooks/useInvoiceFilters';
 
-/**
- * Number of invoices rendered per page.  Export allows tests to reference
- * the same constant without hard-coding a magic number.
- */
 export const PAGE_SIZE = 10;
 
-/**
- * Search debounce delay in milliseconds.
- */
-export const SEARCH_DEBOUNCE_MS = 200;
+const DEV_DELAY = process.env.NODE_ENV === "development" ? 1500 : 0;
 
-/**
- * Returns the screen-reader announcement text for the initial invoice load
- * or when the user performs a search/filter query.
- *
- * Signature / Parameters:
- * @param {Array} invoices - The full resolved invoice array from the API/mock source.
- * @param {object} [options] - Optional settings for filtered states.
- * @param {boolean} [options.filterActive=false] - True if there is an active search query or filter criteria applied.
- * @param {number} [options.filteredCount=0] - The number of invoices matching the active filters.
- * @returns {string} The polite status announcement string to be read by screen readers.
- */
 export function getInvoiceLoadAnnouncement(
   invoices,
   { filterActive = false, filteredCount = 0 } = {},
@@ -45,48 +30,36 @@ export function getInvoiceLoadAnnouncement(
   return `${invoices.length} investable invoices loaded`;
 }
 
-/**
- * Returns the screen-reader announcement text for the current pagination state.
- *
- * @param {number} shown - Number of invoices currently visible.
- * @param {number} total - Total number of invoices available.
- * @returns {string}
- */
 export function getPaginationAnnouncement(shown, total) {
   if (total === 0) return "No invoices available";
   return `Showing ${shown} of ${total} investable invoices`;
 }
 
-/**
- * InvestMarketplace — main component for the invest page.
- *
- * Fetches invoices via `loadInvoices`, renders them PAGE_SIZE at a time,
- * and exposes a "Load more" control to append the next batch.  Paging
- * resets whenever a new invoice set arrives so filter changes (future) stay
- * non-breaking.
- *
- * @param {object}   props
- * @param {Function} [props.loadInvoices] - Async function that resolves to an
- *   invoice array.  Defaults to the mock loader; injectable for testing.
- * @returns {JSX.Element}
- */
-export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
+export function InvestMarketplace({ loadInvoices = fetchInvestableInvoices }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [invoices, setInvoices] = useState(null); // null = loading
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [statusMessage, setStatusMessage] = useState("");
   const [loadError, setLoadError] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
-  const [lastAction, setLastAction] = useState("load"); // "load" | "filter" | "paginate"
+  const [statusMessage, setStatusMessage] = useState("");
 
-  /** Ref forwarded to the "Load more" button for focus management. */
+  const initialSearch = searchParams.get("search") || "";
+  const initialFilters = { ...DEFAULT_FILTERS };
+  for (const key of Object.keys(DEFAULT_FILTERS)) {
+    if (searchParams.has(key)) {
+      initialFilters[key] = searchParams.get(key) || "";
+    }
+  }
+
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [debouncedQuery, setDebouncedQuery] = useState(initialSearch);
+  const [filters, setFilters] = useState(initialFilters);
+
   const loadMoreRef = useRef(null);
 
-  const allInvoices = invoices || [];
-  const filteredInvoices = useInvoiceFilters(allInvoices, debouncedQuery, filters);
-
-  // ——————————————————————————————————————————————————————————————————————————
   useEffect(() => {
     const controller = new AbortController();
     let isActive = true;
@@ -118,7 +91,6 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
     };
   }, [loadInvoices]);
 
-  // ——————————————————————————————————————————————————————————————————————————
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery);
@@ -126,134 +98,103 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Search input change handler
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams);
+    let changed = false;
+
+    if (debouncedQuery) {
+      if (params.get("search") !== debouncedQuery) {
+        params.set("search", debouncedQuery);
+        changed = true;
+      }
+    } else if (params.has("search")) {
+      params.delete("search");
+      changed = true;
+    }
+
+    for (const key of Object.keys(DEFAULT_FILTERS)) {
+      if (filters[key]) {
+        if (params.get(key) !== filters[key]) {
+          params.set(key, filters[key]);
+          changed = true;
+        }
+      } else if (params.has(key)) {
+        params.delete(key);
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }
+  }, [debouncedQuery, filters, pathname, router, searchParams]);
+
   const handleSearchChange = useCallback((value) => {
     setSearchQuery(value);
     setVisibleCount(PAGE_SIZE);
-    setLastAction("filter");
   }, []);
 
-  // Filter change handler
   const handleFilterChange = useCallback((newFilters) => {
     setFilters(newFilters);
     setVisibleCount(PAGE_SIZE);
-    setLastAction("filter");
   }, []);
 
-  // Clear filters handler
-  const handleClearFilters = useCallback(() => {
-    setFilters(DEFAULT_FILTERS);
-    setSearchQuery("");
-    setVisibleCount(PAGE_SIZE);
-    setLastAction("filter");
-  }, []);
-
-  // Filter and sort computation
-  const filteredInvoices = useMemo(() => {
-    if (!Array.isArray(invoices)) return [];
-
-    let result = [...invoices];
-
-    // 1. Search Query (Issuer name, case-insensitive)
-    if (debouncedQuery.trim() !== "") {
-      const q = debouncedQuery.toLowerCase();
-      result = result.filter((inv) =>
-        inv.issuer.toLowerCase().includes(q)
-      );
+  const allInvoices = invoices || [];
+  
+  let filteredInvoices = allInvoices.filter((inv) => {
+    if (debouncedQuery && !inv.issuer.toLowerCase().includes(debouncedQuery.toLowerCase())) {
+      return false;
     }
-
-    // 2. Yield Minimum
-    if (filters.yieldMin !== "") {
-      const minVal = parseFloat(filters.yieldMin);
-      result = result.filter((inv) => {
-        const val = parseFloat(inv.yield);
-        return !isNaN(val) && val >= minVal;
-      });
+    if (filters.yieldMin && parseFloat(inv.yield) < parseFloat(filters.yieldMin)) {
+      return false;
     }
-
-    // 3. Yield Maximum
-    if (filters.yieldMax !== "") {
-      const maxVal = parseFloat(filters.yieldMax);
-      result = result.filter((inv) => {
-        const val = parseFloat(inv.yield);
-        return !isNaN(val) && val <= maxVal;
-      });
+    if (filters.yieldMax && parseFloat(inv.yield) > parseFloat(filters.yieldMax)) {
+      return false;
     }
-
-    // 4. Currency
-    if (filters.currency !== "") {
-      result = result.filter((inv) => inv.currency === filters.currency);
+    if (filters.currency && inv.currency !== filters.currency) {
+      return false;
     }
-
-    // 5. Maturity From
-    if (filters.maturityFrom !== "") {
-      result = result.filter((inv) => inv.dueDate >= filters.maturityFrom);
+    if (filters.maturityFrom && new Date(inv.dueDate) < new Date(filters.maturityFrom)) {
+      return false;
     }
-
-    // 6. Maturity To
-    if (filters.maturityTo !== "") {
-      result = result.filter((inv) => inv.dueDate <= filters.maturityTo);
+    if (filters.maturityTo && new Date(inv.dueDate) > new Date(filters.maturityTo)) {
+      return false;
     }
+    return true;
+  });
 
-    // 7. Sort options
-    if (filters.sort === "yield_desc") {
-      result.sort((a, b) => parseFloat(b.yield) - parseFloat(a.yield));
-    } else if (filters.sort === "yield_asc") {
-      result.sort((a, b) => parseFloat(a.yield) - parseFloat(b.yield));
-    } else if (filters.sort === "amount_desc") {
-      result.sort((a, b) => {
-        const valA = parseFloat(a.amount.replace(/,/g, ""));
-        const valB = parseFloat(b.amount.replace(/,/g, ""));
-        return valB - valA;
-      });
-    } else if (filters.sort === "amount_asc") {
-      result.sort((a, b) => {
-        const valA = parseFloat(a.amount.replace(/,/g, ""));
-        const valB = parseFloat(b.amount.replace(/,/g, ""));
-        return valA - valB;
-      });
-    } else if (filters.sort === "maturity_asc") {
-      result.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
-    } else if (filters.sort === "maturity_desc") {
-      result.sort((a, b) => b.dueDate.localeCompare(a.dueDate));
-    }
+  if (filters.sort) {
+    filteredInvoices = [...filteredInvoices].sort((a, b) => {
+      const yieldA = parseFloat(a.yield) || 0;
+      const yieldB = parseFloat(b.yield) || 0;
+      const amountA = parseFloat(a.amount.replace(/,/g, '')) || 0;
+      const amountB = parseFloat(b.amount.replace(/,/g, '')) || 0;
 
-    return result;
-  }, [invoices, debouncedQuery, filters]);
-
-  // Paginated visible invoices
-  const visibleInvoices = useMemo(() => {
-    return filteredInvoices.slice(0, visibleCount);
-  }, [filteredInvoices, visibleCount]);
-
-  // Live status region announcements (derived during render)
-  const statusMessage = useMemo(() => {
-    if (loadError) {
-      return copy.invest.errorStatus;
-    }
-    if (invoices === null) {
-      return "";
-    }
-    if (lastAction === "paginate") {
-      return getPaginationAnnouncement(visibleInvoices.length, filteredInvoices.length);
-    }
-    const filterActive = hasActiveFilters(filters) || debouncedQuery.trim() !== "";
-    return getInvoiceLoadAnnouncement(invoices, {
-      filterActive,
-      filteredCount: filteredInvoices.length,
+      switch (filters.sort) {
+        case 'yield_desc': return yieldB - yieldA;
+        case 'yield_asc': return yieldA - yieldB;
+        case 'amount_desc': return amountB - amountA;
+        case 'amount_asc': return amountA - amountB;
+        case 'maturity_asc': return a.dueDate.localeCompare(b.dueDate);
+        case 'maturity_desc': return b.dueDate.localeCompare(a.dueDate);
+        default: return 0;
+      }
     });
-  }, [invoices, debouncedQuery, filters, loadError, filteredInvoices.length, visibleInvoices.length, lastAction]);
+  }
 
-  // —— Load-more handler ———————————————————————————————————————————————————
-  /**
-   * Appends the next PAGE_SIZE items and updates the live-region status.
-   * Focus is moved back to the "Load more" button (if it still exists) so
-   * keyboard users do not lose their place in the page.
-   */
-  const handleLoadMore = useCallback(() => {
+  const visibleInvoices = filteredInvoices.slice(0, visibleCount);
+
+  useEffect(() => {
+    if (invoices !== null) {
+      const isFiltered = debouncedQuery !== "" || hasActiveFilters(filters);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setStatusMessage(getInvoiceLoadAnnouncement(allInvoices, { filterActive: isFiltered, filteredCount: filteredInvoices.length }));
+    }
+  }, [invoices, debouncedQuery, filters, allInvoices, filteredInvoices.length]);
+
+  const handleLoadMore = () => {
     setVisibleCount((prev) => {
       const next = Math.min(prev + PAGE_SIZE, filteredInvoices.length);
-      setStatusMessage(getPaginationAnnouncement(next, filteredInvoices.length));
       return next;
     });
 
@@ -261,16 +202,7 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
     setTimeout(() => {
       loadMoreRef.current?.focus();
     }, 0);
-  }, [filteredInvoices]);
-
-  // ——————————————————————————————————————————————————————————————————————————
-  const visibleInvoices = filteredInvoices.slice(0, visibleCount);
-
-  useEffect(() => {
-    if (invoices === null) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setStatusMessage(getPaginationAnnouncement(visibleInvoices.length, filteredInvoices.length));
-  }, [filteredInvoices, visibleInvoices.length, invoices]);
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -291,7 +223,6 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
           {statusMessage}
         </p>
 
-        {/* Filter Controls */}
         <div className="mb-8 rounded-xl border border-slate-800 bg-slate-900/30 p-6">
           <div className="flex flex-wrap gap-4 items-center">
             <InvoiceSearch
@@ -301,7 +232,7 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
             <InvoiceFilters
               filters={filters}
               onFilterChange={handleFilterChange}
-              onClearFilters={handleClearFilters}
+              onClearFilters={() => setFilters(DEFAULT_FILTERS)}
             />
           </div>
         </div>
@@ -367,6 +298,9 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
 }
 
 export default function InvestPage() {
-  return <InvestMarketplace />;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <InvestMarketplace />
+    </Suspense>
+  );
 }
-

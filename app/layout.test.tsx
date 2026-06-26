@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-html-link-for-pages */
 /**
  * Tests for the skip-to-content link and root layout shell (app/layout.js).
  *
