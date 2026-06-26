@@ -50,14 +50,25 @@ Part of the LiquiFact stack: **frontend** (this repo) | **backend** (Express API
 
 ### Environment variables
 
-| Variable                      | Required | Default                 | Used by                                                          |
-| ----------------------------- | -------- | ----------------------- | ---------------------------------------------------------------- |
-| `NEXT_PUBLIC_API_URL`         | No       | `http://localhost:3001` | [app/page.js](app/page.js)                                       |
-| `NEXT_PUBLIC_STELLAR_NETWORK` | No       | Unset                   | [WALLET_INTEGRATION_CONTRACT.md](WALLET_INTEGRATION_CONTRACT.md) |
+| Variable | Required | Default | Description |
+| --- | --- | --- | --- |
+| `NEXT_PUBLIC_API_URL` | No | `http://localhost:3001` | Backend API base URL (must be a valid URL) |
+| `NEXT_PUBLIC_SITE_URL` | No | `http://localhost:3000` | Public site URL used for sitemap/robots (must be a valid URL) |
+| `NEXT_PUBLIC_STELLAR_NETWORK` | No | Unset | Stellar network; accepted values: `testnet`, `public` |
 
-`NEXT_PUBLIC_*` values are exposed to the browser and must never contain secrets.
+`NEXT_PUBLIC_*` values are inlined by Next.js at **build time** and shipped to the browser. **Never store secrets here.**
 
-Default: http://localhost:3000. The home page can check API health at `NEXT_PUBLIC_API_URL` (default `http://localhost:3001`).
+#### Build-time validation
+
+All `NEXT_PUBLIC_*` variables are validated by [`lib/config/env.js`](lib/config/env.js) when the module is first imported. If any variable is set to an invalid value (e.g. a malformed URL or an unsupported `STELLAR_NETWORK` value), the build fails immediately with a message listing every problem:
+
+```
+[env] Environment misconfiguration — fix before deploying:
+  • NEXT_PUBLIC_API_URL: "not-a-url" is not a valid URL
+  • NEXT_PUBLIC_STELLAR_NETWORK: "mainnet" must be one of [testnet, public]
+```
+
+Unset variables fall back to their defaults and do **not** cause a build error.
 
 ---
 
@@ -224,14 +235,13 @@ For frontend/backend contract details see:
 
 ### Environment variables
 
-| Variable                      | Required | Default                 | Used by                                                          |
-| ----------------------------- | -------- | ----------------------- | ---------------------------------------------------------------- |
-| `NEXT_PUBLIC_API_URL`         | No       | `http://localhost:3001` | [app/page.js](app/page.js)                                       |
-| `NEXT_PUBLIC_STELLAR_NETWORK` | No       | Unset                   | [WALLET_INTEGRATION_CONTRACT.md](WALLET_INTEGRATION_CONTRACT.md) |
+| Variable | Required | Default | Description |
+| --- | --- | --- | --- |
+| `NEXT_PUBLIC_API_URL` | No | `http://localhost:3001` | Backend API base URL (must be a valid URL) |
+| `NEXT_PUBLIC_SITE_URL` | No | `http://localhost:3000` | Public site URL for sitemap/robots (must be a valid URL) |
+| `NEXT_PUBLIC_STELLAR_NETWORK` | No | Unset | Stellar network; accepted values: `testnet`, `public` |
 
-`NEXT_PUBLIC_*` values are exposed to the browser and must never contain secrets.
-
-Default: [http://localhost:3000](http://localhost:3000). The home page can check API health at `NEXT_PUBLIC_API_URL` (default `http://localhost:3001`).
+`NEXT_PUBLIC_*` values are inlined at build time and must never contain secrets. See [`lib/config/env.js`](lib/config/env.js) for validation rules and defaults.
 
 The invoices page header also uses the shared `NavMenu` component, replacing the old bespoke header so navigation and wallet entry stay consistent across routes.
 
