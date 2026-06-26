@@ -1,15 +1,13 @@
 "use client";
-import Button from '@/components/Button';
 
-import Button from '@/components/Button'
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Button from "@/components/Button";
 import ErrorBanner from "@/components/ErrorBanner";
 import InvoiceListSkeleton from "@/components/InvoiceListSkeleton";
 import Pagination from "@/components/Pagination";
-import Button from '@/components/Button'
+import InvoiceFilters, { DEFAULT_FILTERS, parseSortState } from "@/components/InvoiceFilters";
 import { copy } from "../copy/en";
-import Button from '@/components/Button'
 import { fetchInvestableInvoices } from "../../lib/api/invoices";
 
 /**
@@ -19,7 +17,7 @@ import { fetchInvestableInvoices } from "../../lib/api/invoices";
 export const PAGE_SIZE = 10;
 
 /**
- * Mock invoice data â€” replace with real API call once the backend endpoint
+ * Mock invoice data – replace with real API call once the backend endpoint
  * is available (follow-up: link backend issue here).
  *
  * Contract per item: { id, issuer, amount, currency, dueDate, yield, status }
@@ -102,11 +100,60 @@ export function getPaginationAnnouncement(shown, total) {
 }
 
 /**
- * InvestMarketplace â€” main component for the invest page.
+ * Parse a numeric amount string like "12,500" → 12500.
+ * @param {string} str
+ * @returns {number}
+ */
+function parseAmount(str) {
+  return parseFloat(String(str).replace(/,/g, "")) || 0;
+}
+
+/**
+ * Parse a yield string like "8.2%" → 8.2.
+ * @param {string} str
+ * @returns {number}
+ */
+function parseYield(str) {
+  return parseFloat(String(str).replace(/%/g, "")) || 0;
+}
+
+/**
+ * Sort a copy of `list` according to the sort column + direction in `filters`.
+ *
+ * Supported columns: "amount", "yield", "maturity".
+ * Direction: "asc" | "desc".
+ *
+ * @param {Array}  list
+ * @param {object} filters
+ * @returns {Array}
+ */
+export function applySortToList(list, filters) {
+  if (!Array.isArray(list) || list.length === 0) return list;
+
+  const { column, dir } = parseSortState(filters);
+  if (!column) return list;
+
+  const multiplier = dir === "asc" ? 1 : -1;
+
+  return [...list].sort((a, b) => {
+    let diff = 0;
+    if (column === "amount") {
+      diff = parseAmount(a.amount) - parseAmount(b.amount);
+    } else if (column === "yield") {
+      diff = parseYield(a.yield) - parseYield(b.yield);
+    } else if (column === "maturity") {
+      diff = new Date(a.dueDate) - new Date(b.dueDate);
+    }
+    return multiplier * diff;
+  });
+}
+
+/**
+ * InvestMarketplace – main component for the invest page.
  *
  * Fetches invoices via `loadInvoices`, renders them PAGE_SIZE at a time,
  * and exposes a "Load more" control to append the next batch.  Paging
- * resets whenever a new invoice set arrives so filter changes (future) stay
+ * resets whenever a new invoice set arrives so filter changes stay
  * non-breaking.
  *
  * @param {object}   props
@@ -117,16 +164,17 @@ export function getPaginationAnnouncement(shown, total) {
 export function InvestMarketplace({ loadInvoices = fetchInvestableInvoices }) {
   const [invoices, setInvoices] = useState(null); // null = loading
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [statusMessage, setStatusMessage] = useState("");
   const [paginationAnnouncement, setPaginationAnnouncement] = useState("");
   const [loadError, setLoadError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
-  /** Ref forwarded to the \"Load more\" button for focus management. */
+  /** Ref forwarded to the "Load more" button for focus management. */
   const loadMoreRef = useRef(null);
 
-  // ——————————————————————————————————————————————————————————————————————————
+  // ──────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     const controller = new AbortController();
     let isActive = true;
@@ -163,7 +211,7 @@ export function InvestMarketplace({ loadInvoices = fetchInvestableInvoices }) {
     };
   }, [loadInvoices]);
 
-  // ——————————————————————————————————————————————————————————————————————————
+  // ──────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery);
@@ -171,7 +219,11 @@ export function InvestMarketplace({ loadInvoices = fetchInvestableInvoices }) {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // â”€â”€ Load-more handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const handleSearchChange = useCallback((value) => {
+    setSearchQuery(value);
+  }, []);
+
+  // ── Load-more handler ──────────────────────────────────────────────────────
   /**
    * Appends the next PAGE_SIZE items and updates the live-region status.
    * Focus is moved back to the "Load more" button (if it still exists) so
@@ -191,10 +243,52 @@ export function InvestMarketplace({ loadInvoices = fetchInvestableInvoices }) {
     }, 0);
   }, [invoices]);
 
-  // â”€â”€ Derived values â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const visibleInvoices = Array.isArray(invoices)
-    ? invoices.slice(0, visibleCount)
-    : [];
+  // ── Derived values ─────────────────────────────────────────────────────────
+  const allInvoices = Array.isArray(invoices) ? invoices : [];
+
+  const filteredInvoices = (() => {
+    let list = allInvoices;
+
+    // Text search
+    if (debouncedQuery.trim()) {
+      const q = debouncedQuery.trim().toLowerCase();
+      list = list.filter(
+        (inv) =>
+          inv.issuer?.toLowerCase().includes(q) ||
+          inv.id?.toLowerCase().includes(q),
+      );
+    }
+
+    // Currency filter
+    if (filters.currency) {
+      list = list.filter((inv) => inv.currency === filters.currency);
+    }
+
+    // Yield range filter
+    if (filters.yieldMin !== "") {
+      const min = parseFloat(filters.yieldMin);
+      list = list.filter((inv) => parseYield(inv.yield) >= min);
+    }
+    if (filters.yieldMax !== "") {
+      const max = parseFloat(filters.yieldMax);
+      list = list.filter((inv) => parseYield(inv.yield) <= max);
+    }
+
+    // Maturity date range filter
+    if (filters.maturityFrom) {
+      list = list.filter((inv) => inv.dueDate >= filters.maturityFrom);
+    }
+    if (filters.maturityTo) {
+      list = list.filter((inv) => inv.dueDate <= filters.maturityTo);
+    }
+
+    // Sort with direction
+    list = applySortToList(list, filters);
+
+    return list;
+  })();
+
+  const visibleInvoices = filteredInvoices.slice(0, visibleCount);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -218,10 +312,6 @@ export function InvestMarketplace({ loadInvoices = fetchInvestableInvoices }) {
         {/* Filter Controls */}
         <div className="mb-8 rounded-xl border border-slate-800 bg-slate-900/30 p-6">
           <div className="flex flex-wrap gap-4 items-center">
-            <InvoiceSearch
-              value={searchQuery}
-              onChange={handleSearchChange}
-            />
             <InvoiceFilters
               filters={filters}
               onFilterChange={setFilters}
@@ -246,7 +336,7 @@ export function InvestMarketplace({ loadInvoices = fetchInvestableInvoices }) {
         ) : (
           <>
             <ul className="space-y-4">
-              {filteredInvoices.map((inv) => (
+              {visibleInvoices.map((inv) => (
                 <li key={inv.id}>
                   <Link
                     href={`/invest/${inv.id}`}
@@ -293,4 +383,3 @@ export function InvestMarketplace({ loadInvoices = fetchInvestableInvoices }) {
 export default function InvestPage() {
   return <InvestMarketplace />;
 }
-
