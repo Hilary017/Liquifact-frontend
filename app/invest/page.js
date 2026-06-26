@@ -1,7 +1,7 @@
 // client directive
 "use client";
 import Button from "@/components/Button";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 import ErrorBanner from "@/components/ErrorBanner";
 import InvoiceCard from "@/components/InvoiceCard";
@@ -11,9 +11,8 @@ import InvoiceSearch from "@/components/InvoiceSearch";
 import InvoiceFilters, { DEFAULT_FILTERS, hasActiveFilters } from "@/components/InvoiceFilters";
 import { copy } from "../copy/en";
 import { fetchInvestableInvoices } from "../../lib/api/invoices";
-import InvoiceSearch from '@/components/InvoiceSearch';
-import InvoiceFilters, { DEFAULT_FILTERS } from '@/components/InvoiceFilters';
-import useInvoiceFilters from '../../lib/hooks/useInvoiceFilters';
+import InvoiceSearch from "@/components/InvoiceSearch";
+import InvoiceFilters, { DEFAULT_FILTERS, hasActiveFilters } from "@/components/InvoiceFilters";
 
 export const PAGE_SIZE = 10;
 
@@ -97,103 +96,106 @@ export function InvestMarketplace({ loadInvoices = fetchInvestableInvoices }) {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  useEffect(() => {
-    const params = new URLSearchParams(searchParams);
-    let changed = false;
+  // ── Derived values & handlers ─────────────────────────────────────────────
+  const allInvoices = Array.isArray(invoices) ? invoices : [];
 
-    if (debouncedQuery) {
-      if (params.get("search") !== debouncedQuery) {
-        params.set("search", debouncedQuery);
-        changed = true;
-      }
-    } else if (params.has("search")) {
-      params.delete("search");
-      changed = true;
+  const filteredInvoices = useMemo(() => {
+    let result = [...allInvoices];
+    const q = debouncedQuery.trim().toLowerCase();
+
+    if (q) {
+      result = result.filter((inv) => inv.issuer.toLowerCase().includes(q));
     }
 
-    for (const key of Object.keys(DEFAULT_FILTERS)) {
-      if (filters[key]) {
-        if (params.get(key) !== filters[key]) {
-          params.set(key, filters[key]);
-          changed = true;
+    if (filters.yieldMin !== "") {
+      const min = parseFloat(filters.yieldMin);
+      if (!isNaN(min)) {
+        result = result.filter((inv) => {
+          const y = parseFloat(inv.yield);
+          return !isNaN(y) && y >= min;
+        });
+      }
+    }
+
+    if (filters.yieldMax !== "") {
+      const max = parseFloat(filters.yieldMax);
+      if (!isNaN(max)) {
+        result = result.filter((inv) => {
+          const y = parseFloat(inv.yield);
+          return !isNaN(y) && y <= max;
+        });
+      }
+    }
+
+    if (filters.currency) {
+      result = result.filter((inv) => inv.currency === filters.currency);
+    }
+
+    if (filters.maturityFrom) {
+      const from = new Date(filters.maturityFrom);
+      result = result.filter((inv) => new Date(inv.dueDate) >= from);
+    }
+
+    if (filters.maturityTo) {
+      const to = new Date(filters.maturityTo);
+      result = result.filter((inv) => new Date(inv.dueDate) <= to);
+    }
+
+    if (filters.sort) {
+      result = [...result].sort((a, b) => {
+        switch (filters.sort) {
+          case "yield_desc":
+            return parseFloat(b.yield) - parseFloat(a.yield);
+          case "yield_asc":
+            return parseFloat(a.yield) - parseFloat(b.yield);
+          case "amount_desc":
+            return (
+              parseFloat(b.amount.replace(/,/g, "")) -
+              parseFloat(a.amount.replace(/,/g, ""))
+            );
+          case "amount_asc":
+            return (
+              parseFloat(a.amount.replace(/,/g, "")) -
+              parseFloat(b.amount.replace(/,/g, ""))
+            );
+          case "maturity_asc":
+            return new Date(a.dueDate) - new Date(b.dueDate);
+          case "maturity_desc":
+            return new Date(b.dueDate) - new Date(a.dueDate);
+          default:
+            return 0;
         }
-      } else if (params.has(key)) {
-        params.delete(key);
-        changed = true;
-      }
+      });
     }
 
-    if (changed) {
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-    }
-  }, [debouncedQuery, filters, pathname, router, searchParams]);
+    return result;
+  }, [allInvoices, debouncedQuery, filters]);
+
+  const filterActive =
+    hasActiveFilters(filters) || Boolean(debouncedQuery.trim());
+
+  const baseStatusMessage =
+    loadError || invoices === null
+      ? loadError
+        ? copy.invest.errorStatus
+        : ""
+      : getInvoiceLoadAnnouncement(allInvoices, {
+          filterActive,
+          filteredCount: filteredInvoices.length,
+        });
+  const statusMessage = paginationAnnouncement || baseStatusMessage;
 
   const handleSearchChange = useCallback((value) => {
     setSearchQuery(value);
     setVisibleCount(PAGE_SIZE);
+    setPaginationAnnouncement("");
   }, []);
 
-  const handleFilterChange = useCallback((newFilters) => {
-    setFilters(newFilters);
-    setVisibleCount(PAGE_SIZE);
-  }, []);
-
-  const allInvoices = invoices || [];
-  
-  let filteredInvoices = allInvoices.filter((inv) => {
-    if (debouncedQuery && !inv.issuer.toLowerCase().includes(debouncedQuery.toLowerCase())) {
-      return false;
-    }
-    if (filters.yieldMin && parseFloat(inv.yield) < parseFloat(filters.yieldMin)) {
-      return false;
-    }
-    if (filters.yieldMax && parseFloat(inv.yield) > parseFloat(filters.yieldMax)) {
-      return false;
-    }
-    if (filters.currency && inv.currency !== filters.currency) {
-      return false;
-    }
-    if (filters.maturityFrom && new Date(inv.dueDate) < new Date(filters.maturityFrom)) {
-      return false;
-    }
-    if (filters.maturityTo && new Date(inv.dueDate) > new Date(filters.maturityTo)) {
-      return false;
-    }
-    return true;
-  });
-
-  if (filters.sort) {
-    filteredInvoices = [...filteredInvoices].sort((a, b) => {
-      const yieldA = parseFloat(a.yield) || 0;
-      const yieldB = parseFloat(b.yield) || 0;
-      const amountA = parseFloat(a.amount.replace(/,/g, '')) || 0;
-      const amountB = parseFloat(b.amount.replace(/,/g, '')) || 0;
-
-      switch (filters.sort) {
-        case 'yield_desc': return yieldB - yieldA;
-        case 'yield_asc': return yieldA - yieldB;
-        case 'amount_desc': return amountB - amountA;
-        case 'amount_asc': return amountA - amountB;
-        case 'maturity_asc': return a.dueDate.localeCompare(b.dueDate);
-        case 'maturity_desc': return b.dueDate.localeCompare(a.dueDate);
-        default: return 0;
-      }
-    });
-  }
-
-  const visibleInvoices = filteredInvoices.slice(0, visibleCount);
-
-  useEffect(() => {
-    if (invoices !== null) {
-      const isFiltered = debouncedQuery !== "" || hasActiveFilters(filters);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setStatusMessage(getInvoiceLoadAnnouncement(allInvoices, { filterActive: isFiltered, filteredCount: filteredInvoices.length }));
-    }
-  }, [invoices, debouncedQuery, filters, allInvoices, filteredInvoices.length]);
-
-  const handleLoadMore = () => {
+  const handleLoadMore = useCallback(() => {
     setVisibleCount((prev) => {
-      const next = Math.min(prev + PAGE_SIZE, filteredInvoices.length);
+      const next = Math.min(prev + PAGE_SIZE, filteredInvoices.length || prev);
+      const total = filteredInvoices.length;
+      setPaginationAnnouncement(getPaginationAnnouncement(next, total));
       return next;
     });
 
@@ -201,10 +203,9 @@ export function InvestMarketplace({ loadInvoices = fetchInvestableInvoices }) {
     setTimeout(() => {
       loadMoreRef.current?.focus();
     }, 0);
-  }, [invoices]);
+  }, [filteredInvoices.length]);
 
-  // â”€â”€ Derived values â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const visibleInvoices = Array.isArray(invoices) ? invoices.slice(0, visibleCount) : [];
+  const visibleInvoices = filteredInvoices.slice(0, visibleCount);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">

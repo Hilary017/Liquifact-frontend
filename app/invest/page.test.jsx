@@ -692,11 +692,23 @@ describe("getInvoiceLoadAnnouncement", () => {
 });
 
 describe("InvestPage", () => {
+  let originalFetch;
+
   beforeEach(() => {
     jest.useFakeTimers();
+    originalFetch = global.fetch;
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [
+        { id: "inv-001", issuer: "Acme Supplies Ltd", amount: "12,500", currency: "USD", dueDate: "2026-06-15", yield: "8.2%", status: "Open" },
+        { id: "inv-002", issuer: "Bright Logistics GmbH", amount: "7,800", currency: "EUR", dueDate: "2026-07-01", yield: "7.5%", status: "Open" },
+        { id: "inv-003", issuer: "Sunrise Exports Pte", amount: "22,000", currency: "USD", dueDate: "2026-05-30", yield: "9.1%", status: "Open" },
+      ],
+    });
   });
 
   afterEach(() => {
+    global.fetch = originalFetch;
     act(() => {
       jest.runOnlyPendingTimers();
     });
@@ -704,11 +716,10 @@ describe("InvestPage", () => {
   });
 
   it("renders the marketplace page via the default export", async () => {
-    jest.useFakeTimers();
     render(<InvestPage />);
     await flushTimers(0);
 
-    expect(screen.getByRole("heading", { name: /^Invest$/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^invest$/i })).toBeInTheDocument();
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
   });
 });

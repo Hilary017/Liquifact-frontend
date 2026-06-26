@@ -6,6 +6,7 @@ import Link from "next/link";
 import { copy } from "./copy/en";
 import NavMenu from "@/components/NavMenu";
 import { getHealth } from "../lib/api/health";
+import { safeJsonStringify } from "@/lib/format/safeJson";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -140,7 +141,7 @@ export default function Home() {
                       {copy.home.healthStatus.viewDetails}
                     </summary>
                     <pre className="mt-2 text-xs text-slate-400 bg-slate-900/50 p-3 rounded overflow-x-auto">
-                      {JSON.stringify(health.details, null, 2)}
+                      {safeJsonStringify(health.details)}
                     </pre>
                   </details>
                 )}

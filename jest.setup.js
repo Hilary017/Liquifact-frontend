@@ -8,6 +8,12 @@ global.Response = class Response {
     this.status = init.status || 200;
     this.headers = init.headers || {};
   }
+  async text() {
+    return typeof this.body === "string" ? this.body : JSON.stringify(this.body);
+  }
+  async json() {
+    return typeof this.body === "string" ? JSON.parse(this.body) : this.body;
+  }
 };
 
 const { toHaveNoViolations } = require("jest-axe");

@@ -47,6 +47,7 @@ const Button = forwardRef(function Button(
     "text-sm font-medium transition-all duration-200 " +
     "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400 " +
     "disabled:opacity-50 disabled:cursor-not-allowed";
+  const disabledClasses = isDisabled ? "opacity-50 cursor-not-allowed" : "";
 
   // Variant-specific styles
   const variantStyles = {
@@ -57,7 +58,7 @@ const Button = forwardRef(function Button(
     danger: "bg-red-500/20 text-red-400 hover:bg-red-500/30 active:bg-red-500/40",
   };
 
-  const combinedClassName = `${baseStyles} ${variantStyles[variant]} ${className}`.trim();
+  const combinedClassName = `${baseStyles} ${variantStyles[variant]} ${disabledClasses} ${className}`.trim();
 
   return (
     <button

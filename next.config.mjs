@@ -1,3 +1,4 @@
+// Security headers configuration – adds Permissions-Policy and Referrer-Policy
 import { buildSecurityHeaders } from "./lib/securityHeaders.mjs";
 
 /** @type {import('next').NextConfig} */

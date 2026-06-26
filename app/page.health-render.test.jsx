@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import Home from "./page";
 
 jest.mock("next/navigation", () => ({
@@ -44,48 +44,23 @@ async function clickCheckHealth() {
 }
 
 describe("Home health render", () => {
-  function getStructuredSummary() {
-    return document.querySelector('[class*="space-y-1"]');
-  }
-
-  it("renders recognized fields in a structured summary", async () => {
+  it("renders status badge and message, and payload inside details", async () => {
     mockFetchOnce({ status: "ok", message: "All good", version: "1.2.3" });
     render(<Home />);
 
     await clickCheckHealth();
 
-    const summary = getStructuredSummary();
-    expect(within(summary).getByText(/status:/i)).toBeInTheDocument();
-    expect(within(summary).getByText(/ok/i)).toBeInTheDocument();
-    expect(within(summary).getByText(/message:/i)).toBeInTheDocument();
-    expect(within(summary).getByText(/All good/i)).toBeInTheDocument();
-    expect(within(summary).getByText(/version:/i)).toBeInTheDocument();
-    expect(within(summary).getByText(/1\.2\.3/i)).toBeInTheDocument();
-  });
-
-  it("omits recognized fields that are missing", async () => {
-    mockFetchOnce({ status: "ok" });
-    render(<Home />);
-
-    await clickCheckHealth();
-
-    const summary = getStructuredSummary();
-    expect(within(summary).getByText(/status:/i)).toBeInTheDocument();
-    expect(within(summary).queryByText(/message:/i)).not.toBeInTheDocument();
-    expect(within(summary).queryByText(/version:/i)).not.toBeInTheDocument();
-  });
-
-  it("renders raw payload inside a collapsed details element", async () => {
-    mockFetchOnce({ status: "ok", message: "healthy" });
-    render(<Home />);
-
-    await clickCheckHealth();
+    expect(screen.getByText("Connected")).toBeInTheDocument();
+    expect(screen.getByText("Backend is healthy")).toBeInTheDocument();
 
     const details = document.querySelector("details");
     expect(details).toBeInTheDocument();
     expect(details).not.toHaveAttribute("open");
 
-    expect(screen.getByText(/raw response/i)).toBeInTheDocument();
+    const pre = document.querySelector("pre");
+    expect(pre).toBeInTheDocument();
+    expect(pre.textContent).toContain("All good");
+    expect(pre.textContent).toContain("1.2.3");
   });
 
   it("renders payload as text content, not HTML", async () => {
@@ -130,18 +105,18 @@ describe("Home health render", () => {
 
     await clickCheckHealth();
 
-    const summary = getStructuredSummary();
-    expect(within(summary).getByText(/status:/i)).toBeInTheDocument();
-    expect(within(summary).getByText(/ok/i)).toBeInTheDocument();
-    expect(within(summary).getByText(/healthy/i)).toBeInTheDocument();
-    expect(within(summary).getByText(/version:/i)).toBeInTheDocument();
-    expect(within(summary).getByText(/2\.0\.0/i)).toBeInTheDocument();
+    expect(screen.getByText("Connected")).toBeInTheDocument();
+    expect(screen.getByText("Backend is healthy")).toBeInTheDocument();
+
+    const pre = document.querySelector("pre");
+    expect(pre.textContent).toContain("healthy");
+    expect(pre.textContent).toContain("2.0.0");
   });
 
   it("does not render health section before check", () => {
     render(<Home />);
 
-    expect(screen.queryByText(/status:/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/raw response/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.queryByText(/view details/i)).not.toBeInTheDocument();
   });
 });

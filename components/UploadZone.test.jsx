@@ -112,6 +112,15 @@ describe("UploadZone", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(/exceeds/);
     expect(screen.getByRole("button", { name: /upload & tokenize invoice/i })).toBeDisabled();
   });
+  it("rejects file with correct MIME but invalid PDF magic bytes", async () => {
+    // Mock the magic validation to return false
+    isPdfMagicValid.mockResolvedValueOnce(false);
+    render(<UploadZone />);
+    const file = createMockFile("fake.pdf", "application/pdf");
+    const input = screen.getByLabelText(/select pdf invoice file/i);
+    fireEvent.change(input, { target: { files: [file] } });
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/valid pdf/i));
+  });
 
   it("progresses through uploading, tokenizing, and success on submit", async () => {
     mockFetchOk();
@@ -537,7 +546,9 @@ describe("UploadZone", () => {
   describe("GROUP 4: Accessibility", () => {
     it("passes axe accessibility check in idle state", async () => {
       const { container } = render(<UploadZone />);
+      jest.useRealTimers();
       const results = await axe(container);
+      jest.useFakeTimers();
       expect(results).toHaveNoViolations();
     });
 
@@ -549,7 +560,9 @@ describe("UploadZone", () => {
         target: { files: [file] },
       });
 
+      jest.useRealTimers();
       const results = await axe(container);
+      jest.useFakeTimers();
       expect(results).toHaveNoViolations();
     });
 
@@ -561,7 +574,9 @@ describe("UploadZone", () => {
         target: { files: [file] },
       });
 
+      jest.useRealTimers();
       const results = await axe(container);
+      jest.useFakeTimers();
       expect(results).toHaveNoViolations();
     });
   });

@@ -7,7 +7,8 @@ export async function GET() {
   const headers = new Headers({
     "Content-Type": "text/plain",
   });
-  return new NextResponse(content, {
+  // Use standard Response to ensure .text() works in tests
+  return new Response(content, {
     status: 200,
     headers,
   });

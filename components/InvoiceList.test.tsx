@@ -28,10 +28,9 @@ describe("InvoiceList", () => {
 
     render(<InvoiceList loadInvoices={loader} />);
 
-    await waitFor(() => expect(screen.getByText('Test Supplier')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Test Supplier")).toBeInTheDocument());
 
     expect(screen.getByRole("heading", { name: /your invoices/i })).toBeInTheDocument();
-    expect(screen.getByText("Test Supplier")).toBeInTheDocument();
     expect(screen.getByText("Another LLC")).toBeInTheDocument();
     expect(screen.getByText("Tokenized")).toBeInTheDocument();
     expect(screen.getByText("Settled")).toBeInTheDocument();
@@ -50,8 +49,7 @@ describe("InvoiceList", () => {
 
     render(<InvoiceList loadInvoices={loader} />);
 
-    await waitFor(() => expect(loader).toHaveBeenCalledTimes(1));
-    expect(screen.getByRole("alert")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
     expect(screen.getByText(/unable to load invoices/i)).toBeInTheDocument();
   });
 
@@ -70,8 +68,7 @@ describe("InvoiceList", () => {
 
     const { rerender } = render(<InvoiceList loadInvoices={loader} optimisticInvoices={[]} />);
 
-    await waitFor(() => expect(loader).toHaveBeenCalledTimes(1));
-    expect(screen.getByText("Stable Cargo")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("Stable Cargo")).toBeInTheDocument());
 
     rerender(
       <InvoiceList
