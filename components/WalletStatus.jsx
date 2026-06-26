@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useToast } from './ToastProvider';
+import Button from './Button';
 import { copy } from '../app/copy/en';
 
 // Wallet connection states
@@ -26,6 +27,18 @@ export default function WalletStatus() {
   const [walletData, setWalletData] = useState(null);
   const [error, setError] = useState(null);
   const toast = useToast();
+
+  /**
+   * Lifecycle: Error state management
+   *
+   * - ERROR state: Triggered when wallet connection fails
+   * - WRONG_NETWORK state: Triggered when wallet is on wrong network
+   * - Error is persisted in state and displayed in inline banner + sr-only region
+   * - Error is cleared when:
+   *   1. User retries connection and it succeeds (state → CONNECTED, error cleared)
+   *   2. User disconnects (state → DISCONNECTED, error cleared)
+   * - Toast provides immediate feedback; inline banner provides persistent reference
+   */
 
   const connectWallet = async () => {
     setWalletState(WALLET_STATES.CONNECTING);
@@ -173,77 +186,101 @@ export default function WalletStatus() {
   };
 
   return (
-    <div className="flex items-center gap-4">
-      <div className="flex items-center gap-3">
-        {/* Status dot */}
+    <div className="flex flex-col gap-3">
+      {/* Inline error banner for ERROR and WRONG_NETWORK states */}
+      {(walletState === WALLET_STATES.ERROR || walletState === WALLET_STATES.WRONG_NETWORK) && error && (
         <div
-          className={`w-2 h-2 rounded-full transition-colors duration-200 ${
-            walletState === WALLET_STATES.CONNECTED
-              ? 'bg-green-500'
-              : walletState === WALLET_STATES.CONNECTING
-                ? 'bg-yellow-500 animate-pulse'
-                : walletState === WALLET_STATES.ERROR || walletState === WALLET_STATES.WRONG_NETWORK
-                  ? 'bg-red-500'
-                  : 'bg-slate-600'
-          }`}
-          aria-hidden="true"
-        />
-
-        {/* Wallet address or helper text */}
-        {config.showAddress && walletData ? (
-          <div className="flex flex-col">
-            <span className="text-sm font-mono text-slate-300">{walletData.address}</span>
-            <span className="text-xs text-slate-500">{walletData.balance}</span>
+          role="alert"
+          aria-live="assertive"
+          className="rounded-2xl border border-red-500/30 bg-red-500/10 p-3 text-slate-50 shadow-sm"
+          data-testid="wallet-error-banner"
+        >
+          <div className="flex items-start gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-500/20 text-red-200 ring-1 ring-red-300/30">
+              <span aria-hidden="true" className="text-sm font-semibold">
+                !
+              </span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm leading-5 text-slate-200">{error}</p>
+            </div>
           </div>
-        ) : (
-          <span className="text-sm text-slate-400 max-w-xs">{config.helperText}</span>
-        )}
-      </div>
+        </div>
+      )}
 
-      <Button
-        variant={config.variant}
-        loading={config.loading}
-        disabled={config.disabled}
-        onClick={handleClick}
-        aria-label={config.buttonText}
-        aria-describedby="wallet-helper-text"
-      >
-        {walletState === WALLET_STATES.CONNECTING && (
-          <svg
-            className="animate-spin -ml-1 mr-2 h-4 w-4 inline"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
+      {/* Main wallet status container */}
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {/* Status dot */}
+          <div
+            className={`w-2 h-2 rounded-full transition-colors duration-200 ${
+              walletState === WALLET_STATES.CONNECTED
+                ? 'bg-green-500'
+                : walletState === WALLET_STATES.CONNECTING
+                  ? 'bg-yellow-500 animate-pulse'
+                  : walletState === WALLET_STATES.ERROR || walletState === WALLET_STATES.WRONG_NETWORK
+                    ? 'bg-red-500'
+                    : 'bg-slate-600'
+            }`}
             aria-hidden="true"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-        )}
-        {config.buttonText}
-      </Button>
+          />
 
-      <div className="sr-only" role="status" aria-live="polite">
-        Wallet status:
-        {' '}
-        {walletState}
-        {walletData?.address && `. Connected as ${walletData.address}`}
-        {error && `. Error: ${error}`}
-      </div>
+          {/* Wallet address or helper text */}
+          {config.showAddress && walletData ? (
+            <div className="flex flex-col">
+              <span className="text-sm font-mono text-slate-300">{walletData.address}</span>
+              <span className="text-xs text-slate-500">{walletData.balance}</span>
+            </div>
+          ) : (
+            <span className="text-sm text-slate-400 max-w-xs">{config.helperText}</span>
+          )}
+        </div>
 
-      <div id="wallet-helper-text" className="sr-only">
-        {config.helperText}
+        <Button
+          variant={config.variant}
+          loading={config.loading}
+          disabled={config.disabled}
+          onClick={handleClick}
+          aria-label={config.buttonText}
+          aria-describedby="wallet-helper-text"
+        >
+          {walletState === WALLET_STATES.CONNECTING && (
+            <svg
+              className="animate-spin -ml-1 mr-2 h-4 w-4 inline"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+          )}
+          {config.buttonText}
+        </Button>
+
+        <div className="sr-only" role="status" aria-live="polite">
+          Wallet status:
+          {' '}
+          {walletState}
+          {walletData?.address && `. Connected as ${walletData.address}`}
+          {error && `. Error: ${error}`}
+        </div>
+
+        <div id="wallet-helper-text" className="sr-only">
+          {config.helperText}
+        </div>
       </div>
     </div>
   );

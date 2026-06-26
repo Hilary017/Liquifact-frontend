@@ -154,15 +154,45 @@ describe('WalletStatus — CONNECTING → ERROR (error path)', () => {
     expect(within(getToastRegion()).getByText(/connection failed/i)).toBeInTheDocument();
   });
 
-  it('retry button triggers another connecting attempt', async () => {
+  it('renders inline error banner with appropriate styling and accessibility', async () => {
     await connectWithError();
-    fireEvent.click(screen.getByRole('button', { name: /retry connection/i }));
-    expect(screen.getByRole('button', { name: /connecting/i })).toBeDisabled();
+    const errorBanner = screen.getByTestId('wallet-error-banner');
+    expect(errorBanner).toBeInTheDocument();
+    expect(errorBanner).toHaveAttribute('role', 'alert');
+    expect(errorBanner).toHaveAttribute('aria-live', 'assertive');
   });
 
-  it('sr-only status region reflects error state', async () => {
+  it('displays error message in inline error banner', async () => {
+    await connectWithError();
+    expect(screen.getByText(/Failed to connect to wallet/)).toBeInTheDocument();
+  });
+
+  it('error banner persists when button remains visible', async () => {
+    await connectWithError();
+    expect(screen.getByTestId('wallet-error-banner')).toBeInTheDocument();
+    // Even though toast auto-dismisses, banner should persist
+    expect(screen.getByTestId('wallet-error-banner')).toBeVisible();
+  });
+
+  it('sr-only status region includes error details', async () => {
     await connectWithError();
     expect(getWalletStatusRegion()).toHaveTextContent(/error/i);
+    expect(getWalletStatusRegion()).toHaveTextContent(/Failed to connect to wallet/);
+  });
+
+  it('retry button triggers another connecting attempt and clears error on success', async () => {
+    await connectWithError();
+    // First error banner should be visible
+    expect(screen.getByTestId('wallet-error-banner')).toBeInTheDocument();
+    
+    // Mock successful retry
+    jest.spyOn(Math, 'random').mockReturnValue(0);
+    fireEvent.click(screen.getByRole('button', { name: /retry connection/i }));
+    await act(async () => { jest.advanceTimersByTime(1500); });
+    
+    // Error banner should be gone after successful retry
+    expect(screen.queryByTestId('wallet-error-banner')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /disconnect/i })).toBeInTheDocument();
   });
 });
 
@@ -193,9 +223,35 @@ describe('WalletStatus — CONNECTING → WRONG_NETWORK (wrong network path)', (
     expect(within(getToastRegion()).getByText(/wrong network/i)).toBeInTheDocument();
   });
 
-  it('sr-only status region reflects wrong_network state', async () => {
+  it('renders inline error banner for wrong network state', async () => {
+    await connectWithWrongNetwork();
+    const errorBanner = screen.getByTestId('wallet-error-banner');
+    expect(errorBanner).toBeInTheDocument();
+    expect(errorBanner).toHaveAttribute('role', 'alert');
+  });
+
+  it('displays wrong network error message in inline error banner', async () => {
+    await connectWithWrongNetwork();
+    expect(screen.getByText(/Wallet is connected to testnet/)).toBeInTheDocument();
+  });
+
+  it('sr-only status region reflects wrong_network state and error', async () => {
     await connectWithWrongNetwork();
     expect(getWalletStatusRegion()).toHaveTextContent(/wrong_network/i);
+    expect(getWalletStatusRegion()).toHaveTextContent(/Wallet is connected to testnet/);
+  });
+
+  it('error banner clears after successful reconnection from wrong network', async () => {
+    await connectWithWrongNetwork();
+    expect(screen.getByTestId('wallet-error-banner')).toBeInTheDocument();
+    
+    // Mock successful retry
+    jest.spyOn(Math, 'random').mockReturnValue(0);
+    fireEvent.click(screen.getByRole('button', { name: /switch network/i }));
+    await act(async () => { jest.advanceTimersByTime(1500); });
+    
+    // Error banner should disappear
+    expect(screen.queryByTestId('wallet-error-banner')).not.toBeInTheDocument();
   });
 });
 
@@ -223,6 +279,67 @@ describe('WalletStatus — CONNECTED → DISCONNECTED (disconnect path)', () => 
   it('sr-only status region reflects disconnected state after disconnect', async () => {
     await connectAndDisconnect();
     expect(getWalletStatusRegion()).toHaveTextContent(/disconnected/i);
+  });
+});
+
+describe('WalletStatus — ERROR → DISCONNECTED (error then disconnect)', () => {
+  async function connectWithErrorThenDisconnect() {
+    jest.spyOn(Math, 'random').mockReturnValue(0.4); // index 1 → 'error'
+    renderWalletStatus();
+    fireEvent.click(screen.getByRole('button', { name: /connect wallet/i }));
+    await act(async () => { jest.advanceTimersByTime(1500); });
+    fireEvent.click(screen.getByRole('button', { name: /retry connection/i })); // This acts as retry in error state
+  }
+
+  afterEach(() => jest.restoreAllMocks());
+
+  it('clears error banner when transitioning from ERROR to CONNECTING', async () => {
+    jest.spyOn(Math, 'random').mockReturnValue(0.4);
+    renderWalletStatus();
+    fireEvent.click(screen.getByRole('button', { name: /connect wallet/i }));
+    await act(async () => { jest.advanceTimersByTime(1500); });
+    
+    // Error banner should be visible in ERROR state
+    expect(screen.getByTestId('wallet-error-banner')).toBeInTheDocument();
+    
+    // Click to retry
+    fireEvent.click(screen.getByRole('button', { name: /retry connection/i }));
+    
+    // Error banner should clear when moving to CONNECTING state
+    expect(screen.queryByTestId('wallet-error-banner')).not.toBeInTheDocument();
+  });
+});
+
+describe('WalletStatus — WRONG_NETWORK → DISCONNECTED (wrong network then disconnect)', () => {
+  async function connectWithWrongNetworkThenDisconnect() {
+    jest.spyOn(Math, 'random').mockReturnValue(0.8);
+    renderWalletStatus();
+    fireEvent.click(screen.getByRole('button', { name: /connect wallet/i }));
+    await act(async () => { jest.advanceTimersByTime(1500); });
+  }
+
+  afterEach(() => jest.restoreAllMocks());
+
+  it('error banner persists in WRONG_NETWORK until user action', async () => {
+    await connectWithWrongNetworkThenDisconnect();
+    expect(screen.getByTestId('wallet-error-banner')).toBeInTheDocument();
+  });
+
+  it('clears error banner after button click (switching network, simulated by retry)', async () => {
+    jest.spyOn(Math, 'random').mockReturnValue(0.8);
+    renderWalletStatus();
+    fireEvent.click(screen.getByRole('button', { name: /connect wallet/i }));
+    await act(async () => { jest.advanceTimersByTime(1500); });
+    
+    expect(screen.getByTestId('wallet-error-banner')).toBeInTheDocument();
+    
+    // Simulate user retrying after switching network
+    jest.spyOn(Math, 'random').mockReturnValue(0);
+    fireEvent.click(screen.getByRole('button', { name: /switch network/i }));
+    await act(async () => { jest.advanceTimersByTime(1500); });
+    
+    // Error banner should clear after success
+    expect(screen.queryByTestId('wallet-error-banner')).not.toBeInTheDocument();
   });
 });
 

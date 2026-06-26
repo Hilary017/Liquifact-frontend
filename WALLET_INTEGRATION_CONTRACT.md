@@ -9,6 +9,7 @@ This document outlines the contract for implementing actual Stellar wallet integ
 - ✅ Responsive design
 - ✅ Helper text and error messaging
 - ✅ Visual status indicators
+- ✅ Persistent inline error banner for ERROR/WRONG_NETWORK states
 - ❌ Actual wallet connection logic (mocked)
 
 ## Wallet States
@@ -79,6 +80,27 @@ Target wallets for integration:
 - `walletData` - Connected wallet information (balance is runtime-only, not persisted)
 - `connect()` - Initiate connection (returns `{ outcome, message? }`)
 - `disconnect()` - Terminate connection and clear persisted snapshot
+
+### Error Banner Lifecycle
+When the wallet enters `ERROR` or `WRONG_NETWORK` states:
+
+1. **Display**: An inline error banner (`role="alert"`, `aria-live="assertive"`) is rendered above the main wallet status UI
+2. **Content**: The banner displays the specific error message (e.g., "Failed to connect to wallet. Please try again." or "Wallet is connected to testnet. Please switch to public network.")
+3. **Persistence**: Unlike the auto-dismissing toast notification, the banner remains visible as long as the wallet is in an error state
+4. **Clearing**: The banner is removed when:
+   - User retries and the connection succeeds (→ CONNECTED state)
+   - User retries and reaches a different error state (error message updates)
+   - User performs another action that transitions the wallet state
+
+### Error Messaging Strategy
+- **Toast**: Provides immediate, prominent feedback when an error occurs (auto-dismisses after a few seconds)
+- **Inline Banner**: Provides persistent visibility for users who may have missed the toast or need to reference the error
+- **SR-only Status**: Announces the error to screen reader users without duplicating the visible banner
+
+This multi-layered approach ensures:
+- Immediate notice via toast
+- Persistent reference via inline banner
+- Accessible announcements for screen readers
 
 ### Global State Management
 `WalletProvider` (see `components/WalletProvider.jsx`) is the **single source of truth** for wallet state. It is mounted once in `app/layout.js` and persists a minimal, non-sensitive snapshot to `localStorage` so the UI can rehydrate after reload.
