@@ -1,4 +1,4 @@
-import Button from './Button';
+import Button from "./Button";
 
 export default function ErrorBanner({
   variant = "server",
@@ -39,8 +39,8 @@ export default function ErrorBanner({
       {actionLabel ? (
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Button variant="primary" onClick={onAction}>
-  Retry
-</Button>
+            Retry
+          </Button>
         </div>
       ) : null}
     </div>

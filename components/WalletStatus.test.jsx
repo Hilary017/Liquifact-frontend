@@ -12,10 +12,8 @@ function setup() {
 function renderWithProviders(ui) {
   return render(
     <ToastProvider>
-      <WalletProvider>
-        {ui}
-      </WalletProvider>
-    </ToastProvider>,
+      <WalletProvider>{ui}</WalletProvider>
+    </ToastProvider>
   );
 }
 
@@ -29,6 +27,9 @@ async function flushTimers(delayMs) {
 describe("WalletStatus", () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    if (typeof window !== "undefined") {
+      window.localStorage.clear();
+    }
   });
 
   afterEach(async () => {
@@ -44,7 +45,7 @@ describe("WalletStatus", () => {
 
     expect(screen.getByRole("button", { name: /connect wallet/i })).toBeInTheDocument();
     expect(
-      screen.getByText(/connect your stellar wallet/i, { selector: "span" }),
+      screen.getByText(/connect your stellar wallet/i, { selector: "span" })
     ).toBeInTheDocument();
   });
 

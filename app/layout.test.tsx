@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-html-link-for-pages */
 /**
  * Tests for the skip-to-content link and root layout shell (app/layout.js).
  *
@@ -10,6 +11,7 @@ import "@testing-library/jest-dom";
 import { render, screen } from "@testing-library/react";
 import { axe } from "jest-axe";
 import React from "react";
+import Link from "next/link";
 
 // ── Mock RootLayout's external dependencies ───────────────────────────────────
 
@@ -23,12 +25,12 @@ jest.mock("../components/Footer", () => {
 
 jest.mock("../components/ToastProvider", () => {
   const React = require("react");
-  const mockContext = React.createContext(null);
+  const ToastContext = React.createContext(null);
   return {
-    ToastProvider({ children }) {
-      return React.createElement(React.Fragment, null, children);
+    ToastProvider({ children }: { children: React.ReactNode }) {
+      return <>{children}</>;
     },
-    ToastContext: mockContext,
+    ToastContext,
   };
 });
 
@@ -57,23 +59,22 @@ function SkipLinkFixture({ children }: { children?: React.ReactNode }) {
 describe("Skip-to-content link", () => {
   it("renders with an accessible label", () => {
     render(<SkipLinkFixture />);
-    expect(
-      screen.getByRole("link", { name: /skip to content/i })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /skip to content/i })).toBeInTheDocument();
   });
 
   it("targets the #main-content landmark", () => {
     render(<SkipLinkFixture />);
-    expect(
-      screen.getByRole("link", { name: /skip to content/i })
-    ).toHaveAttribute("href", "#main-content");
+    expect(screen.getByRole("link", { name: /skip to content/i })).toHaveAttribute(
+      "href",
+      "#main-content"
+    );
   });
 
   it("is the first focusable element in the document", () => {
     render(
       <SkipLinkFixture>
         <main id="main-content">
-          <a href="/invoices">Invoices</a>
+          <Link href="/invoices">Invoices</Link>
           <button type="button">Click me</button>
         </main>
       </SkipLinkFixture>
@@ -94,8 +95,8 @@ describe("Skip-to-content link", () => {
     render(
       <SkipLinkFixture>
         <main id="main-content">
-          <a href="/invoices">Invoices</a>
-          <a href="/invest">Invest</a>
+          <Link href="/invoices">Invoices</Link>
+          <Link href="/invest">Invest</Link>
         </main>
       </SkipLinkFixture>
     );
@@ -146,9 +147,7 @@ describe("RootLayout", () => {
       </RootLayout>
     );
 
-    expect(
-      screen.getByRole("link", { name: /skip to content/i })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /skip to content/i })).toBeInTheDocument();
   });
 
   it("skip link in RootLayout targets #main-content", () => {
@@ -158,16 +157,17 @@ describe("RootLayout", () => {
       </RootLayout>
     );
 
-    expect(
-      screen.getByRole("link", { name: /skip to content/i })
-    ).toHaveAttribute("href", "#main-content");
+    expect(screen.getByRole("link", { name: /skip to content/i })).toHaveAttribute(
+      "href",
+      "#main-content"
+    );
   });
 
   it("skip link in RootLayout is the first focusable element", () => {
     render(
       <RootLayout>
         <main id="main-content">
-          <a href="/invoices">Invoices</a>
+          <Link href="/invoices">Invoices</Link>
         </main>
       </RootLayout>
     );

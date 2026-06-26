@@ -72,4 +72,3 @@ describe("globals.css theming + WCAG contrast smoke", () => {
     expect(contrastRatio(muted || "", bg || "")).toBeGreaterThanOrEqual(4.5);
   });
 });
-

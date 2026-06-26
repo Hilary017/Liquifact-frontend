@@ -71,9 +71,7 @@ describe("buildContentSecurityPolicy", () => {
   });
 
   it("allow-lists the API origin in connect-src so fetch() is not blocked", () => {
-    const csp = parseCsp(
-      buildContentSecurityPolicy({ apiUrl: "https://api.liquifact.io" })
-    );
+    const csp = parseCsp(buildContentSecurityPolicy({ apiUrl: "https://api.liquifact.io" }));
     expect(csp["connect-src"]).toContain("'self'");
     expect(csp["connect-src"]).toContain("https://api.liquifact.io");
   });

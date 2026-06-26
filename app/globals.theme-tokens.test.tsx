@@ -22,5 +22,3 @@ describe("globals.css theme tokens", () => {
     expect(bodyStyle.backgroundColor).not.toBe("rgb(255, 255, 255)");
   });
 });
-
-

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import dynamic from 'next/dynamic';
+import dynamic from "next/dynamic";
 
 /**
  * Static placeholder that mirrors WalletStatus dimensions.
@@ -49,12 +49,9 @@ function WalletStatusPlaceholder() {
  * the same outer box model as WalletStatus, no cumulative layout shift
  * occurs when the real component hydrates.
  */
-const WalletStatusLazy = dynamic(
-  () => import('./WalletStatus'),
-  {
-    ssr: false,
-    loading: WalletStatusPlaceholder,
-  }
-);
+const WalletStatusLazy = dynamic(() => import("./WalletStatus"), {
+  ssr: false,
+  loading: WalletStatusPlaceholder,
+});
 
 export default WalletStatusLazy;

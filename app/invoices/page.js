@@ -1,7 +1,9 @@
+"use client";
 import { useState } from "react";
 import { copy } from "../copy/en";
 import NavMenu from "../../components/NavMenu";
 import UploadZone from "../../components/UploadZone";
+import { useState } from "react";
 import InvoiceList from "../../components/InvoiceList";
 
 export default function InvoicesPage() {

@@ -1,7 +1,15 @@
-'use client';
+"use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { ToastContext } from './ToastProvider';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { ToastContext } from "./ToastProvider";
 
 /**
  * Read the toast API when available. Returns null when WalletProvider is
@@ -13,24 +21,24 @@ function useOptionalToast() {
 }
 
 export const WALLET_STATES = {
-  DISCONNECTED: 'disconnected',
-  CONNECTING: 'connecting',
-  CONNECTED: 'connected',
-  ERROR: 'error',
-  WRONG_NETWORK: 'wrong_network',
-  NO_WALLET: 'no_wallet',
+  DISCONNECTED: "disconnected",
+  CONNECTING: "connecting",
+  CONNECTED: "connected",
+  ERROR: "error",
+  WRONG_NETWORK: "wrong_network",
+  NO_WALLET: "no_wallet",
 };
 
-const STORAGE_KEY = 'liquifact-wallet-snapshot';
+const STORAGE_KEY = "liquifact-wallet-snapshot";
 const STORAGE_VERSION = 1;
 
 const MOCK_WALLET_DATA = {
-  address: 'GABC...XYZ123',
-  network: 'public',
-  balance: '1,234.56 XLM',
+  address: "GABC...XYZ123",
+  network: "public",
+  balance: "1,234.56 XLM",
 };
 
-const VALID_NETWORKS = new Set(['public', 'testnet']);
+const VALID_NETWORKS = new Set(["public", "testnet"]);
 const PERSISTABLE_STATES = new Set([WALLET_STATES.CONNECTED]);
 
 /**
@@ -39,8 +47,8 @@ const PERSISTABLE_STATES = new Set([WALLET_STATES.CONNECTED]);
  * @returns {string}
  */
 export function truncateAddress(address) {
-  if (!address || typeof address !== 'string') {
-    return '';
+  if (!address || typeof address !== "string") {
+    return "";
   }
   if (address.length <= 12) {
     return address;
@@ -55,7 +63,7 @@ export function truncateAddress(address) {
  * @returns {{ version: number, state: string, address: string, network: string } | null}
  */
 export function sanitizeSnapshot(raw) {
-  if (!raw || typeof raw !== 'object') {
+  if (!raw || typeof raw !== "object") {
     return null;
   }
 
@@ -67,14 +75,14 @@ export function sanitizeSnapshot(raw) {
   if (!PERSISTABLE_STATES.has(state)) {
     return null;
   }
-  if (typeof address !== 'string' || address.length === 0 || address.length > 64) {
+  if (typeof address !== "string" || address.length === 0 || address.length > 64) {
     return null;
   }
-  if (typeof network !== 'string' || !VALID_NETWORKS.has(network)) {
+  if (typeof network !== "string" || !VALID_NETWORKS.has(network)) {
     return null;
   }
   // Never rehydrate values that look like secret keys
-  if (address.startsWith('S') && address.length >= 56) {
+  if (address.startsWith("S") && address.length >= 56) {
     return null;
   }
 
@@ -90,7 +98,7 @@ export function sanitizeSnapshot(raw) {
  * @returns {boolean}
  */
 export function isBrowser() {
-  return typeof window !== 'undefined';
+  return typeof window !== "undefined";
 }
 
 /**
@@ -203,44 +211,44 @@ export function WalletProvider({ children }) {
       setState(WALLET_STATES.CONNECTING);
 
       setTimeout(() => {
-        const scenarios = ['success', 'error', 'wrong_network', 'no_wallet'];
+        const scenarios = ["success", "error", "wrong_network", "no_wallet"];
         const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
 
         switch (scenario) {
-          case 'success':
+          case "success":
             setState(WALLET_STATES.CONNECTED);
             setWalletData(MOCK_WALLET_DATA);
-            toast?.success('Wallet connected successfully.', 'Wallet connected');
-            resolve({ outcome: 'success' });
+            toast?.success("Wallet connected successfully.", "Wallet connected");
+            resolve({ outcome: "success" });
             break;
-          case 'error':
+          case "error":
             setState(WALLET_STATES.ERROR);
             setWalletData(null);
-            toast?.error('Failed to connect to wallet. Please try again.', 'Connection failed');
+            toast?.error("Failed to connect to wallet. Please try again.", "Connection failed");
             resolve({
-              outcome: 'error',
-              message: 'Failed to connect to wallet. Please try again.',
+              outcome: "error",
+              message: "Failed to connect to wallet. Please try again.",
             });
             break;
-          case 'wrong_network':
+          case "wrong_network":
             setState(WALLET_STATES.WRONG_NETWORK);
             setWalletData(null);
             toast?.error(
-              'Wallet is connected to testnet. Please switch to public network.',
-              'Wrong network',
+              "Wallet is connected to testnet. Please switch to public network.",
+              "Wrong network"
             );
             resolve({
-              outcome: 'wrong_network',
-              message: 'Wallet is connected to testnet. Please switch to public network.',
+              outcome: "wrong_network",
+              message: "Wallet is connected to testnet. Please switch to public network.",
             });
             break;
-          case 'no_wallet':
+          case "no_wallet":
             setState(WALLET_STATES.NO_WALLET);
             setWalletData(null);
-            toast?.error('No Stellar wallet detected. Install one to continue.', 'No wallet');
+            toast?.error("No Stellar wallet detected. Install one to continue.", "No wallet");
             resolve({
-              outcome: 'no_wallet',
-              message: 'No Stellar wallet detected. Install one to continue.',
+              outcome: "no_wallet",
+              message: "No Stellar wallet detected. Install one to continue.",
             });
             break;
         }
@@ -256,7 +264,7 @@ export function WalletProvider({ children }) {
 
   const value = useMemo(
     () => ({ state, walletData, connect, disconnect }),
-    [state, walletData, connect, disconnect],
+    [state, walletData, connect, disconnect]
   );
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
@@ -276,7 +284,7 @@ export function WalletProvider({ children }) {
 export function useWallet() {
   const context = useContext(WalletContext);
   if (!context) {
-    throw new Error('useWallet must be used within a WalletProvider');
+    throw new Error("useWallet must be used within a WalletProvider");
   }
   return context;
 }

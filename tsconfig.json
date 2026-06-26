@@ -1,6 +1,10 @@
 {
   "compilerOptions": {
     "target": "ES2017",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    },
     "lib": [
       "dom",
       "dom.iterable",
@@ -8,6 +12,10 @@
     ],
     "types": ["jest", "node", "@testing-library/jest-dom"],
     "allowJs": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    },
     "skipLibCheck": true,
     "strict": false,
     "noEmit": true,
@@ -33,7 +41,5 @@
     "**/*.ts",
     "**/*.tsx"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }
