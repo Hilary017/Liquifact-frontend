@@ -1,5 +1,11 @@
 import { test, expect } from '@playwright/test';
 
+const head = () => {
+ return 2+2
+}
+
+console.log(head())
+
 test('Invest marketplace loads and displays invoices', async ({ page }) => {
   await page.goto('/invest');
 

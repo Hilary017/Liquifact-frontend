@@ -29,6 +29,12 @@ import Spinner from './Spinner';
  * @param {string} [props.className] — Additional Tailwind classes.
  * @param {React.Ref<HTMLButtonElement>} ref — Forwarded ref.
  */
+
+const P = () => (
+return "hi"
+)
+
+
 const Button = forwardRef(function Button(
   {
     variant = 'primary',
