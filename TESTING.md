@@ -119,11 +119,15 @@ npx playwright test tests/toast.spec.jsx
 
 ### Test locations
 
-| Path                    | What it covers                                                                       |
-| ----------------------- | ------------------------------------------------------------------------------------ |
-| `tests/toast.spec.jsx`  | Invoice upload flow — file selection, submit, toast notification.                    |
-| `tests/invest.spec.jsx` | Invest marketplace flow — loading, skeleton, list, status announcement, empty state. |
-| `tests/fixtures/`       | Static fixture files used in tests (e.g. `dummy.pdf`).                               |
+| Path                                  | What it covers                                                                                   |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `playwright.config.mjs`               | Configures the Playwright runner (`testDir`, `baseURL`, `webServer`, `trace: 'on-first-retry'`). |
+| `tests/toast.spec.jsx`                | Invoice upload flow — file selection, submit, toast notification.                                |
+| `tests/invest.spec.jsx`               | Invest marketplace flow — loading, skeleton, list, status announcement, empty state.             |
+| `tests/invest-detail.spec.jsx`        | Invoice detail funding flow — connect wallet prompt, disabled while connecting, not-found.       |
+| `tests/e2e/marketplace-url.spec.ts`   | Marketplace URL sharing — search/filter state hydrate across a fresh navigation.                 |
+| `tests/e2e/theme-persistence.spec.ts` | Theme toggle — preference persists across reload with no FOIT and no console errors (#265).      |
+| `tests/fixtures/`                     | Static fixture files used in tests (e.g. `dummy.pdf`).                                           |
 
 ### Writing a new Playwright test
 
@@ -187,6 +191,71 @@ test("Invoice detail funding flow", async ({ page }) => {
   await expect(page.locator("text=Invoice not found")).toBeVisible();
 });
 ```
+
+### Theme Toggle Persistence Test
+
+The `ThemeToggle` component ships with detailed Jest unit tests, but those
+run in jsdom and can't observe the pre-paint inline script in
+`app/layout.js`. This e2e spec exercises the full browser-level integration:
+a user toggles the theme, reloads, and the chosen theme is restored without a
+flash of incorrect theme and without any console errors.
+
+```ts
+// tests/e2e/theme-persistence.spec.ts
+import { test, expect } from "@playwright/test";
+
+test("light theme persists across reload with no console errors", async ({ page }) => {
+  // Pin the OS preference so 'system' resolves deterministically.
+  await page.emulateMedia({ colorScheme: "dark" });
+
+  // Capture anything written to console.error so we can assert silence.
+  const errors: string[] = [];
+  page.on("console", (msg) => {
+    if (msg.type() === "error") errors.push(msg.text());
+  });
+  page.on("pageerror", (err) => errors.push(err.message));
+
+  await page.goto("/");
+  const toggle = page.locator("#theme-toggle");
+  await expect(toggle).toBeVisible();
+
+  // Initial: 'system' resolves to 'dark' under our emulated scheme.
+  await expect(toggle).toHaveAttribute("data-theme-pref", "system");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+
+  // Toggle once: 'system' → 'light' (the non-default selection).
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("data-theme-pref", "light");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+
+  // Full page reload — pre-paint script re-applies from localStorage.
+  await page.reload();
+
+  await expect(toggle).toHaveAttribute("data-theme-pref", "light");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  expect(errors).toEqual([]);
+});
+```
+
+The complete spec (`tests/e2e/theme-persistence.spec.ts`) also covers:
+
+- Toggling **through** to `dark` (two clicks) and reloading.
+- A **pre-set** `localStorage` preference, asserted via a `MutationObserver`
+  on `<html>`'s `data-theme` to prove there is no flash of incorrect theme on
+  first paint.
+- Verifying the toggle remains in the **natural tab order** after reload and
+  is reachable via keyboard navigation (focus management / a11y).
+- Cycling through all **three** themes (`light → dark → system`) and
+  asserting the final preference persists.
+
+Conventions used:
+
+- `await page.emulateMedia({ colorScheme: "..." })` keeps the `system`
+  resolution deterministic across CI machines.
+- `page.evaluate(...)` reads `localStorage` so the assertion isn't coupled
+  to React's internal state.
+- `page.reload()` triggers a true navigation, exercising the pre-paint
+  script in `app/layout.js`.
 
 ---
 
