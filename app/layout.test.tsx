@@ -11,7 +11,7 @@ import "@testing-library/jest-dom";
 import { render, screen } from "@testing-library/react";
 import { axe } from "jest-axe";
 import React from "react";
-import Link from "next/link";
+import Link from 'next/link';
 
 // ── Mock RootLayout's external dependencies ───────────────────────────────────
 
@@ -34,7 +34,7 @@ jest.mock("../components/ToastProvider", () => {
   };
 });
 
-jest.mock("../components/WalletContext", () => ({
+jest.mock("../components/WalletProvider", () => ({
   WalletProvider({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   },
@@ -95,8 +95,7 @@ describe("Skip-to-content link", () => {
       <SkipLinkFixture>
         <main id="main-content">
           <a href="/invoices">Invoices</a>
-          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- fixture intentionally uses plain anchors to test DOM order */}
-          <a href="/invest">Invest</a>
+         <Link href="/invest/">Invest</Link>
         </main>
       </SkipLinkFixture>
     );

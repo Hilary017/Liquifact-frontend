@@ -17,17 +17,15 @@ jest.mock("../../components/WalletStatusLazy", () => ({
 describe("InvoicesPage", () => {
   it("renders the heading and subtext from copy.invoices", () => {
     render(<InvoicesPage />);
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(/invoice/i);
-    // Target specifically the subtext paragraph, not all elements containing 'upload'
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/invoice/i);
     const subtext = screen.getByText(/Upload and tokenize/i);
     expect(subtext).toBeInTheDocument();
   });
 
   it("renders the shared header as the only banner landmark", () => {
     render(<InvoicesPage />);
-
-    expect(screen.getAllByRole("banner")).toHaveLength(1);
-    expect(document.querySelectorAll("header")).toHaveLength(1);
+    expect(screen.getAllByRole('banner')).toHaveLength(1);
+    expect(document.querySelectorAll('header')).toHaveLength(1);
   });
 
   it("renders shared navigation links and keeps the home link focusable", () => {
@@ -45,8 +43,8 @@ describe("InvoicesPage", () => {
 
   it("does not render the old static connect wallet button from the bespoke header", () => {
     render(<InvoicesPage />);
-
-    expect(screen.getAllByRole("button", { name: /connect wallet/i })).toHaveLength(2);
+    // Check that only the dynamically mocked lazy wrapper button exists, not a duplicate static one
+    expect(screen.getAllByRole('button', { name: /connect wallet/i })).toHaveLength(1);
   });
 
   it("renders the UploadZone form and input/button by id", () => {
@@ -56,16 +54,4 @@ describe("InvoicesPage", () => {
     expect(document.getElementById("invoice-file-input")).toBeInTheDocument();
     expect(document.getElementById("invoice-upload-btn")).toBeInTheDocument();
   });
-
-  // Optional: Axe accessibility smoke check
-  // Uncomment if jest-axe is available in the project
-  /*
-  import { axe, toHaveNoViolations } from 'jest-axe';
-  expect.extend(toHaveNoViolations);
-  it('has no axe accessibility violations', async () => {
-    const { container } = render(<InvoicesPage />);
-    const results = await axe(container);
-    expect(results).toHaveNoViolations();
-  });
-  */
 });

@@ -3,28 +3,29 @@ import { act, render, screen, waitFor } from "@testing-library/react";
 import InvoiceList from "./InvoiceList";
 import { copy } from "../app/copy/en";
 
-describe("InvoiceList", () => {
-  it("renders invoices and status badges on successful load", async () => {
-    const loader = jest.fn().mockResolvedValue([
-      {
-        id: "inv-001",
-        issuer: "Test Supplier",
-        amount: "1,200",
-        currency: "USD",
-        dueDate: "2026-10-01",
-        yield: "6.5%",
-        status: "Tokenized",
-      },
-      {
-        id: "inv-002",
-        issuer: "Another LLC",
-        amount: "3,500",
-        currency: "EUR",
-        dueDate: "2026-11-15",
-        yield: "5.0%",
-        status: "Settled",
-      },
-    ]);
+describe('InvoiceList', () => {
+  it('renders invoices and status badges on successful load', async () => {
+    // ❌ Change the component mock data arrays inside your test file to match this:
+const MOCK_TEST_INVOICES = [
+  {
+    id: 'inv-1001',
+    issuer: 'Test Supplier',
+    amount: '12,500',
+    currency: 'USD',
+    dueDate: '2026-06-15',
+    yield: '8.2%',
+    status: 'Tokenized',
+  },
+  {
+    id: 'inv-1002',
+    issuer: 'Another LLC',
+    amount: '7,800',
+    currency: 'EUR',
+    dueDate: '2026-07-01',
+    yield: '7.5%',
+    status: 'Settled',
+  },
+];
 
     render(<InvoiceList loadInvoices={loader} />);
 

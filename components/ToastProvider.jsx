@@ -149,8 +149,10 @@ export function ToastProvider({ children }) {
     [scheduleToastTimer]
   );
 
-  useEffect(() => {
+ useEffect(() => {
+  // 🛡️ Cache the mutable ref pointer value within the active effect scope
   const currentTimers = timers.current;
+
   return () => {
     currentTimers.forEach((timeout) => clearTimeout(timeout));
     currentTimers.clear();

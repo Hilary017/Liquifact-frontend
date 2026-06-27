@@ -150,7 +150,9 @@ function UploadZone({ onUploadSuccess }) {
       const body = new FormData();
       body.append("invoice", file);
 
-      const res = await fetch(`${API_URL}/invoices`, { method: "POST", body });
+      const baseUrl = typeof API_URL !== 'undefined' && API_URL ? API_URL : '';
+      const res = await fetch(`${baseUrl}/invoices`, { method: 'POST', body });
+
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));

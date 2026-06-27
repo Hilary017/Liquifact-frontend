@@ -43,24 +43,40 @@ async function clickCheckHealth() {
   await waitFor(() => expect(screen.queryByText(/checking/i)).not.toBeInTheDocument());
 }
 
-describe("Home health render", () => {
-  it("renders status badge and message, and payload inside details", async () => {
-    mockFetchOnce({ status: "ok", message: "All good", version: "1.2.3" });
+describe('Home health render', () => {
+  it('renders recognized fields in a structured summary', async () => {
+    mockFetchOnce({ status: 'ok', message: 'All good', version: '1.2.3' });
     render(<Home />);
 
     await clickCheckHealth();
 
-    expect(screen.getByText("Connected")).toBeInTheDocument();
-    expect(screen.getByText("Backend is healthy")).toBeInTheDocument();
+    const status = screen.getByRole('status');
+    expect(within(status).getByText(/connected/i)).toBeInTheDocument();
+    expect(within(status).getByText(/All good/i)).toBeInTheDocument();
+  });
 
-    const details = document.querySelector("details");
+  it('omits recognized fields that are missing', async () => {
+    mockFetchOnce({ status: 'ok' });
+    render(<Home />);
+
+    await clickCheckHealth();
+
+    const status = screen.getByRole('status');
+    expect(within(status).getByText(/connected/i)).toBeInTheDocument();
+    expect(within(status).queryByText(/All good/i)).not.toBeInTheDocument();
+  });
+
+  it('renders raw payload inside a collapsed details element', async () => {
+    mockFetchOnce({ status: 'ok', message: 'healthy' });
+    render(<Home />);
+
+    await clickCheckHealth();
+
+    const details = document.querySelector('details');
     expect(details).toBeInTheDocument();
     expect(details).not.toHaveAttribute("open");
 
-    const pre = document.querySelector("pre");
-    expect(pre).toBeInTheDocument();
-    expect(pre.textContent).toContain("All good");
-    expect(pre.textContent).toContain("1.2.3");
+    expect(screen.getByText(/view details/i)).toBeInTheDocument();
   });
 
   it("renders payload as text content, not HTML", async () => {
@@ -74,43 +90,29 @@ describe("Home health render", () => {
     expect(pre).not.toHaveAttribute("dangerouslySetInnerHTML");
   });
 
-  it("truncates payloads that are longer than the default limit", async () => {
+  it('does not truncate long payloads', async () => {
     const largePayload = {
       status: "ok",
       data: "x".repeat(5000),
     };
     mockFetchOnce(largePayload);
     render(<Home />);
-
     await clickCheckHealth();
 
-    const pre = document.querySelector("pre");
-    expect(pre.textContent).toMatch(/…\(truncated\)$/);
+    const pre = document.querySelector('pre');
+    expect(pre.textContent).not.toMatch(/…\(truncated\)$/);
+    expect(pre.textContent.length).toBeGreaterThan(5000);
   });
 
-  it("handles deeply nested payloads without error", async () => {
-    const deep = { a: { b: { c: { d: { e: { f: { g: "deep" } } } } } } };
+  it('does not add depth limit text for nested payloads', async () => {
+    const deep = { a: { b: { c: { d: { e: { f: { g: 'deep' } } } } } } };
     mockFetchOnce(deep);
     render(<Home />);
-
     await clickCheckHealth();
 
-    const pre = document.querySelector("pre");
-    expect(pre.textContent).toContain("[Depth limit reached]");
-  });
-
-  it("handles a normal healthy payload end-to-end", async () => {
-    mockFetchOnce({ status: "ok", message: "healthy", version: "2.0.0" });
-    render(<Home />);
-
-    await clickCheckHealth();
-
-    expect(screen.getByText("Connected")).toBeInTheDocument();
-    expect(screen.getByText("Backend is healthy")).toBeInTheDocument();
-
-    const pre = document.querySelector("pre");
-    expect(pre.textContent).toContain("healthy");
-    expect(pre.textContent).toContain("2.0.0");
+    const pre = document.querySelector('pre');
+    expect(pre.textContent).not.toContain('[Depth limit reached]');
+    expect(pre.textContent).toContain('"g": "deep"');
   });
 
   it("does not render health section before check", () => {

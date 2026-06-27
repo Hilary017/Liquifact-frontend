@@ -7,7 +7,6 @@ import NavMenu from '../components/NavMenu';
 import { copy } from './copy/en';
 import { getHealth } from '../lib/api/health';
 import NavMenu from '../components/NavMenu';
-import { extractKnownFields, safeJsonStringify } from '../lib/format/safeJson';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 

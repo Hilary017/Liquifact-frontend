@@ -83,6 +83,7 @@ export const copy = {
     helperError: "Connection failed. Please try again.",
     helperWrongNetwork: "Please switch to the Stellar public network",
     helperNoWallet: "No Stellar wallet detected. Install one to continue",
+    installWalletUrl: "https://www.stellar.org/wallets",
     toastConnectedTitle: "Wallet connected",
     toastConnectedMsg: "Wallet connected successfully.",
     toastErrorTitle: "Connection failed",

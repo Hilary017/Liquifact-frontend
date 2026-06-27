@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { copy } from "../copy/en";
-import NavMenu from "../../components/NavMenu";
-import UploadZone from "../../components/UploadZone";
-import { useState } from "react";
-import InvoiceList from "../../components/InvoiceList";
+// ✨ Change your imports to look one directory level closer:
+import Header from '../components/Header';
+import UploadZone from '../components/UploadZone';
+import InvoiceList from '../components/InvoiceList';
+import { copy } from '../copy/en';
+import { useState } from 'react';
 
 export default function InvoicesPage() {
   const [optimisticInvoices, setOptimisticInvoices] = useState([]);
@@ -15,15 +15,26 @@ export default function InvoicesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      {/* Reuse the shared site header so invoices matches the rest of the app. */}
-      <NavMenu />
-      <main id="main-content" className="max-w-4xl mx-auto px-6 py-12">
-        <h1 className="text-2xl font-bold mb-6">{copy.invoices.title}</h1>
-        <p className="text-slate-400 mb-8">{copy.invoices.subtext}</p>
-        <UploadZone onUploadSuccess={handleUploadSuccess} />
-        <div className="mt-10">
-          <InvoiceList optimisticInvoices={optimisticInvoices} />
+    <div className="min-h-screen bg-slate-950 text-slate-50">
+      <Header activePath="/invoices" />
+
+      <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="space-y-2 mb-10">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-100 sm:text-4xl">
+            {copy.invoices.title || 'Invoices'}
+          </h1>
+          <p className="text-lg text-slate-400">
+            {copy.invoices.description || 'Upload and tokenize your commercial invoices.'}
+          </p>
+        </div>
+
+        <div className="grid gap-10 lg:grid-cols-3">
+          <div className="lg:col-span-1">
+            <UploadZone onUploadSuccess={handleUploadSuccess} />
+          </div>
+          <div className="lg:col-span-2">
+            <InvoiceList optimisticInvoices={optimisticInvoices} />
+          </div>
         </div>
       </main>
     </div>

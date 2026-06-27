@@ -6,15 +6,16 @@ import "@testing-library/jest-dom";
 
 // ── Mock next/dynamic so we can control lazy-load timing in tests ──
 jest.mock('next/dynamic', () => {
-  const React = require('react');
-  return function dynamicMock(importFunc: () => Promise<any>, options: any) {
-    const LazyComponent = mockReact.lazy(importFunc);
+  return function dynamicMock(importFunc: () => Promise<any>, options: any): React.FC<any> {
+    // Use require inside the factory to get a locally-scoped reference.
+    const LazyComponent = require('react').lazy(importFunc);
 
-    function DynamicWrapper(props: any) {
-      const [Component, setComponent] = mockReact.useState<any>(null);
-      const [isLoading, setIsLoading] = mockReact.useState(true);
+    const DynamicWrapper: React.FC<any> = (props) => {
+      const inlineReact = require('react');
+      const [Component, setComponent] = inlineReact.useState(null);
+      const [isLoading, setIsLoading] = inlineReact.useState(true);
 
-      mockReact.useEffect(() => {
+      inlineReact.useEffect(() => {
         let cancelled = false;
         importFunc().then((mod: any) => {
           if (!cancelled) {
@@ -33,18 +34,23 @@ jest.mock('next/dynamic', () => {
       }
 
       if (Component) {
-        return (
-          <mockReact.Suspense fallback={options?.loading ? <options.loading {...props} /> : null}>
-            <Component {...props} />
-          </mockReact.Suspense>
-        );
+        return <Component {...props} />;
       }
 
       return null;
-    }
+    };
 
-    DynamicWrapper.displayName = "DynamicWrapper";
-    return DynamicWrapper;
+    DynamicWrapper.displayName = 'DynamicWrapper';
+    const SuspenseWrapper: React.FC<any> = (props) => {
+      const inlineReact = require('react');
+      return (
+        <inlineReact.Suspense fallback={options?.loading ? <options.loading {...props} /> : null}>
+          <DynamicWrapper {...props} />
+        </inlineReact.Suspense>
+      );
+    };
+    SuspenseWrapper.displayName = 'SuspenseWrapper';
+    return SuspenseWrapper;
   };
 });
 
@@ -52,22 +58,15 @@ jest.mock('next/dynamic', () => {
 const mockConnectWallet = jest.fn();
 const mockDisconnectWallet = jest.fn();
 
-jest.mock("./WalletContext", () => ({
+jest.mock('./WalletProvider', () => ({
+  ...jest.requireActual('./WalletProvider'),
   useWallet: () => ({
-    walletState: "disconnected",
+    state: 'disconnected',
     walletData: null,
     error: null,
-    connectWallet: mockConnectWallet,
-    disconnectWallet: mockDisconnectWallet,
-  }),
-  WALLET_STATES: {
-    DISCONNECTED: "disconnected",
-    CONNECTING: "connecting",
-    CONNECTED: "connected",
-    ERROR: "error",
-    WRONG_NETWORK: "wrong_network",
-    NO_WALLET: "no_wallet",
-  },
+    connect: mockConnectWallet,
+    disconnect: mockDisconnectWallet,
+  })
 }));
 
 jest.mock('./ToastProvider', () => ({

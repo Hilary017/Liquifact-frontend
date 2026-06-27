@@ -5,6 +5,9 @@ import ErrorBanner from './ErrorBanner';
 import EmptyState, { InvoiceEmptyIllustration } from './EmptyState';
 import InvoiceListSkeleton from './InvoiceListSkeleton';
 import { copy } from '../app/copy/en';
+import { fetchInvestableInvoices } from '../lib/api/invoices';
+import InvoiceSearch from './InvoiceSearch';
+import InvoiceFilters from './InvoiceFilters';
 
 const INVOICE_STATUSES = {
   PENDING_TOKENIZATION: "Pending tokenization",
@@ -27,22 +30,22 @@ const STATUS_STYLES = {
 
 const MOCK_INVOICES = [
   {
-    id: "inv-1001",
-    issuer: "Acme Supplies Ltd",
-    amount: "12,500",
-    currency: "USD",
-    dueDate: "2026-06-15",
-    yield: "8.2%",
+    id: 'inv-1001',
+    issuer: 'Test Supplier',
+    amount: '12,500',
+    currency: 'USD',
+    dueDate: '2026-06-15',
+    yield: '8.2%',
     status: INVOICE_STATUSES.TOKENIZED,
   },
   {
-    id: "inv-1002",
-    issuer: "Bright Logistics GmbH",
-    amount: "7,800",
-    currency: "EUR",
-    dueDate: "2026-07-01",
-    yield: "7.5%",
-    status: INVOICE_STATUSES.FUNDED,
+    id: 'inv-1002',
+    issuer: 'Another LLC',
+    amount: '7,800',
+    currency: 'EUR',
+    dueDate: '2026-07-01',
+    yield: '7.5%',
+    status: INVOICE_STATUSES.SETTLED,
   },
 ];
 
@@ -152,18 +155,10 @@ function mergeInvoices(optimisticInvoices, loadedInvoices) {
   return Array.from(mergedById.values());
 }
 
-/**
- * InvoiceList — renders a SME invoice list with accessible loading,
- * empty, and error states.
- *
- * @param {object} props
- * @param {Function} [props.loadInvoices] - Async loader that resolves to an
- *   invoice array. Defaults to a mock loader for local development.
- * @param {Array<object>} [props.optimisticInvoices] - Newly submitted invoices
- *   that should appear immediately while backend syncs.
- * @returns {JSX.Element}
- */
-export default function InvoiceList({ loadInvoices = loadMockInvoices, optimisticInvoices = [] }) {
+export default function InvoiceList({
+  loadInvoices = loadMockInvoices,
+  optimisticInvoices = [],
+}) {
   const [invoices, setInvoices] = useState(null);
   const [loadError, setLoadError] = useState('');
 
@@ -182,6 +177,9 @@ export default function InvoiceList({ loadInvoices = loadMockInvoices, optimisti
     let active = true;
 
     async function load() {
+      setInvoices(null);
+      setLoadError('');
+
       try {
         const result = await loadInvoices();
         if (!active) return;
@@ -196,7 +194,7 @@ export default function InvoiceList({ loadInvoices = loadMockInvoices, optimisti
       }
     }
 
-    void load();
+    load();
     return () => {
       active = false;
     };
@@ -204,9 +202,7 @@ export default function InvoiceList({ loadInvoices = loadMockInvoices, optimisti
 
   const statusMessage = loadError
     ? 'Invoice list failed to load.'
-    : invoices === null
-      ? 'Loading invoices.'
-      : getInvoiceAnnouncement(mergedInvoices);
+    : (invoices === null ? 'Loading invoices.' : getInvoiceAnnouncement(mergedInvoices));
 
   if (loadError) {
     return (

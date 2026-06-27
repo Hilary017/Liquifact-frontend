@@ -1,8 +1,21 @@
-import { GET } from "./sitemap";
-import { NextResponse } from "next/server";
+if (typeof (global as any).Request === 'undefined') {
+  (global as any).Request = class Request {
+    public url: string;
+    public headers: Map<string, string>;
+    constructor(input: any, init?: any) {
+      this.url = typeof input === 'string' ? input : input?.url || '';
+      this.headers = new Map();
+    }
+  };
+}
 
-describe("Sitemap Route", () => {
-  it("returns XML with expected public routes", async () => {
+import { NextResponse } from 'next/server';
+
+// Import after polyfill so Next's request internals don't throw.
+import { GET } from './sitemap';
+
+describe('Sitemap Route', () => {
+  it('returns XML with expected public routes', async () => {
     const response = (await GET()) as NextResponse;
     expect(response.status).toBe(200);
     const xml = await response.text();
