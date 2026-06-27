@@ -4,6 +4,7 @@ import Footer from "../components/Footer";
 import { ToastProvider } from "../components/ToastProvider";
 import { WalletProvider } from "../components/WalletProvider";
 import ThemeToggle, { THEME_STORAGE_KEY, THEMES } from "../components/ThemeToggle";
+import { copy } from "./copy/en";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,9 +17,31 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "LiquiFact — Global Invoice Liquidity on Stellar",
-  description:
-    "Tokenized invoice financing for SMEs. Unlock liquidity from unpaid invoices on the Stellar network.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+  title: `LiquiFact — ${copy.home.heroTitle}`,
+  description: copy.home.heroSub,
+  openGraph: {
+    title: `LiquiFact — ${copy.home.heroTitle}`,
+    description: copy.home.heroSub,
+    url: '/',
+    siteName: 'LiquiFact',
+    images: [
+      {
+        url: '/opengraph-image', // Next.js App Router dynamic route
+        width: 1200,
+        height: 630,
+        alt: 'LiquiFact Social Preview',
+      }
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `LiquiFact — ${copy.home.heroTitle}`,
+    description: copy.home.heroSub,
+    images: ['/opengraph-image'],
+  },
 };
 
 /**

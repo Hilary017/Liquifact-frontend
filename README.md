@@ -526,6 +526,16 @@ The home page health check now:
 
 ---
 
+## SEO and Social Metadata
+
+The root `app/layout.js` exports comprehensive metadata for improved discoverability and rich social sharing (OpenGraph, Twitter Cards).
+
+- **Social Previews**: When links are shared, a dynamically generated OpenGraph image (`app/opengraph-image.tsx`) aligned with the cyan/slate brand colors is displayed.
+- **Icons**: App icons and Apple Touch Icons are generated dynamically via `app/icon.tsx` and `app/apple-icon.tsx`, using Next.js `ImageResponse`.
+- **Absolute URLs**: The metadata utilizes `metadataBase` which is powered by the `NEXT_PUBLIC_SITE_URL` environment variable to ensure all social image links resolve to absolute URLs correctly.
+
+---
+
 ## Security
 
 - **Bounded health rendering** — The home page displays the backend `/health` response
