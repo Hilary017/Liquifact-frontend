@@ -8,7 +8,41 @@ import {
   SEARCH_DEBOUNCE_MS,
   default as InvestPage,
 } from "./page";
-import { getInvoiceById, loadMockInvoices } from "./lib";
+import { getInvoiceById, loadMockInvoices, MOCK_INVOICES } from "./lib";
+
+jest.mock("../../lib/api/invoices", () => ({
+  fetchInvestableInvoices: jest.fn(() =>
+    Promise.resolve([
+      {
+        id: "1",
+        issuer: "A",
+        amount: "100",
+        currency: "USD",
+        yield: "1",
+        status: "Open",
+        dueDate: "2024",
+      },
+      {
+        id: "2",
+        issuer: "B",
+        amount: "200",
+        currency: "USD",
+        yield: "2",
+        status: "Open",
+        dueDate: "2025",
+      },
+      {
+        id: "3",
+        issuer: "C",
+        amount: "300",
+        currency: "USD",
+        yield: "3",
+        status: "Open",
+        dueDate: "2026",
+      },
+    ])
+  ),
+}));
 
 jest.mock("next/link", () => {
   function MockLink({ href, children, ...props }) {
@@ -24,6 +58,40 @@ jest.mock("next/link", () => {
     default: MockLink,
   };
 });
+
+jest.mock("../../lib/api/invoices", () => ({
+  fetchInvestableInvoices: jest.fn(() =>
+    Promise.resolve([
+      {
+        id: "inv-001",
+        issuer: "Acme Supplies Ltd",
+        amount: "12,500",
+        currency: "USD",
+        dueDate: "2026-06-15",
+        yield: "8.2%",
+        status: "Open",
+      },
+      {
+        id: "inv-002",
+        issuer: "Bright Logistics GmbH",
+        amount: "7,800",
+        currency: "EUR",
+        dueDate: "2026-07-01",
+        yield: "7.5%",
+        status: "Open",
+      },
+      {
+        id: "inv-003",
+        issuer: "Sunrise Exports Pte",
+        amount: "22,000",
+        currency: "USD",
+        dueDate: "2026-05-30",
+        yield: "9.1%",
+        status: "Open",
+      },
+    ])
+  ),
+}));
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -513,8 +581,97 @@ describe("InvestMarketplace", () => {
 
   it("announces filtered results in the live region", async () => {
     const invoices = [
-      { id: "inv-001", issuer: "A", amount: "100", currency: "USD", dueDate: "2026-06-15", yield: "5%", status: "Open" },
-      { id: "inv-002", issuer: "B", amount: "200", currency: "EUR", dueDate: "2026-07-01", yield: "6%", status: "Open" },
+      {
+        id: "inv-001",
+        issuer: "A",
+        amount: "100",
+        currency: "USD",
+        dueDate: "2026-06-15",
+        yield: "5%",
+        status: "Open",
+      },
+      {
+        id: "inv-002",
+        issuer: "B",
+        amount: "200",
+        currency: "EUR",
+        dueDate: "2026-07-01",
+        yield: "6%",
+        status: "Open",
+      },
+    ];
+
+    render(<InvestMarketplace loadInvoices={createDeferredLoader(invoices, 0)} />);
+    await flushTimers(0);
+
+    expect(screen.getByRole("status")).toHaveTextContent("Showing 2 of 2 investable invoices");
+
+    fireEvent.click(screen.getByLabelText("Filter by EUR"));
+
+    expect(screen.getByRole("status")).toHaveTextContent("Showing 1 of 1 investable invoices");
+  });
+
+  it("filters invoices by issuer search query after debounce", async () => {
+    const invoices = [
+      {
+        id: "inv-001",
+        issuer: "Acme Supplies Ltd",
+        amount: "100",
+        currency: "USD",
+        dueDate: "2026-06-15",
+        yield: "5%",
+        status: "Open",
+      },
+      {
+        id: "inv-002",
+        issuer: "Bright Logistics GmbH",
+        amount: "200",
+        currency: "EUR",
+        dueDate: "2026-07-01",
+        yield: "6%",
+        status: "Open",
+      },
+    ];
+
+    render(<InvestMarketplace loadInvoices={createDeferredLoader(invoices, 0)} />);
+    await flushTimers(0);
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+
+    fireEvent.change(screen.getByLabelText("Search by issuer name"), {
+      target: { value: "acme" },
+    });
+
+    // Before debounce runs, it should not filter yet
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+
+    await flushTimers(SEARCH_DEBOUNCE_MS);
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    expect(screen.getByText("Acme Supplies Ltd")).toBeInTheDocument();
+    expect(screen.queryByText("Bright Logistics GmbH")).not.toBeInTheDocument();
+  });
+
+  it("announces filtered results in the live region when search is applied", async () => {
+    const invoices = [
+      {
+        id: "inv-001",
+        issuer: "Acme Supplies Ltd",
+        amount: "100",
+        currency: "USD",
+        dueDate: "2026-06-15",
+        yield: "5%",
+        status: "Open",
+      },
+      {
+        id: "inv-002",
+        issuer: "Bright Logistics GmbH",
+        amount: "200",
+        currency: "EUR",
+        dueDate: "2026-07-01",
+        yield: "6%",
+        status: "Open",
+      },
     ];
 
     render(<InvestMarketplace loadInvoices={createDeferredLoader(invoices, 0)} />);
@@ -562,6 +719,39 @@ describe("getInvoiceLoadAnnouncement", () => {
 describe("InvestPage", () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    originalFetch = global.fetch;
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          id: "inv-001",
+          issuer: "Acme Supplies Ltd",
+          amount: "12,500",
+          currency: "USD",
+          dueDate: "2026-06-15",
+          yield: "8.2%",
+          status: "Open",
+        },
+        {
+          id: "inv-002",
+          issuer: "Bright Logistics GmbH",
+          amount: "7,800",
+          currency: "EUR",
+          dueDate: "2026-07-01",
+          yield: "7.5%",
+          status: "Open",
+        },
+        {
+          id: "inv-003",
+          issuer: "Sunrise Exports Pte",
+          amount: "22,000",
+          currency: "USD",
+          dueDate: "2026-05-30",
+          yield: "9.1%",
+          status: "Open",
+        },
+      ],
+    });
   });
 
   afterEach(() => {

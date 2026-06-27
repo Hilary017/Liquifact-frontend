@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
-import NavMenu from '../components/NavMenu';
-import { copy } from './copy/en';
-import { getHealth } from '../lib/api/health';
-import NavMenu from '../components/NavMenu';
+import { copy } from "./copy/en";
+import { getHealth } from "../lib/api/health";
+import NavMenu from "../components/NavMenu";
+import { extractKnownFields, safeJsonStringify } from "../lib/format/safeJson";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -42,7 +42,7 @@ const getStatusConfig = (status) => {
 };
 
 /** Known fields to surface in the structured summary (from raw server payload). */
-const KNOWN_FIELDS = ['status', 'message', 'version'];
+const KNOWN_FIELDS = ["status", "message", "version"];
 
 export default function Home() {
   const [health, setHealth] = useState(null);
@@ -66,7 +66,7 @@ export default function Home() {
       if (controller.signal.aborted) return;
       setHealth(result);
     } catch (err) {
-      if (err?.name === 'AbortError') return;
+      if (err?.name === "AbortError") return;
     } finally {
       if (!controller.signal.aborted) {
         setLoading(false);
@@ -132,15 +132,17 @@ export default function Home() {
                     <span>{getStatusConfig(health.status).label}</span>
                   </span>
                 </div>
-                
+
                 {/* Structured summary for recognized fields */}
                 <div className="text-xs text-slate-300 space-y-1 mb-3">
-                  {Object.entries(extractKnownFields(health.details || health)).map(([key, value]) => (
-                    <div key={key}>
-                      <span className="text-slate-500 font-semibold">{key}:</span>{' '}
-                      <span className="text-slate-300">{String(value)}</span>
-                    </div>
-                  ))}
+                  {Object.entries(extractKnownFields(health.details || health)).map(
+                    ([key, value]) => (
+                      <div key={key}>
+                        <span className="text-slate-500 font-semibold">{key}:</span>{" "}
+                        <span className="text-slate-300">{String(value)}</span>
+                      </div>
+                    )
+                  )}
                 </div>
 
                 <p className="text-sm text-slate-300">{health.message}</p>
@@ -158,7 +160,7 @@ export default function Home() {
                 )}
 
                 {/* Structured key/value summary — reads from the raw server payload */}
-                {health.details && typeof health.details === 'object' && (
+                {health.details && typeof health.details === "object" && (
                   <dl className="space-y-1 text-sm text-slate-300 mb-3">
                     {KNOWN_FIELDS.filter((key) => key in health.details).map((key) => (
                       <div key={key} className="flex gap-2">
@@ -178,7 +180,6 @@ export default function Home() {
                     {safeJsonStringify(health.details ?? health)}
                   </pre>
                 </details>
-
               </div>
             </div>
           )}

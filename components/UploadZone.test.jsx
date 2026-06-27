@@ -6,7 +6,7 @@ import { copy } from "../app/copy/en";
 import { isPdfMagicValid } from "../lib/validation/pdf";
 
 jest.mock("../lib/validation/pdf", () => ({
-  isPdfMagicValid: jest.fn()
+  isPdfMagicValid: jest.fn(),
 }));
 
 expect.extend(toHaveNoViolations);

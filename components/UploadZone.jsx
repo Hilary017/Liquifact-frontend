@@ -7,10 +7,6 @@ import { isPdfMagicValid } from "../lib/validation/pdf";
 // Base URL for backend API; sourced from env (defaults to empty string for tests)
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-
 const FILE_CONSTRAINTS = {
   accept: ".pdf",
   mimeType: "application/pdf",
@@ -205,31 +201,32 @@ function UploadZone({ onUploadSuccess }) {
     <form onSubmit={handleSubmit} noValidate>
       <FileConstraintNotice />
 
-        <label htmlFor="invoice-file-input" className="sr-only">{copy.uploadZone.fileInputLabel}</label>
-        <input
-          ref={inputRef}
-          id="invoice-file-input"
-          type="file"
-          accept={FILE_CONSTRAINTS.accept}
-          className="sr-only"
-          aria-label={copy.uploadZone.fileInputLabel}
-          onChange={handleChange}
-        />
-        <div
-          role="button"
-          tabIndex={0}
-          aria-label={copy.uploadZone.dropZoneLabel}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragOver(true);
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
-          onClick={() => inputRef.current?.click()}
-          onKeyDown={handleKeyDown}
-          className={`cursor-pointer rounded-xl border-2 border-dashed transition-colors duration-200 p-10 text-center ${dropZoneBorder}`}
-        >
-
+      <label htmlFor="invoice-file-input" className="sr-only">
+        {copy.uploadZone.fileInputLabel}
+      </label>
+      <input
+        ref={inputRef}
+        id="invoice-file-input"
+        type="file"
+        accept={FILE_CONSTRAINTS.accept}
+        className="sr-only"
+        aria-label={copy.uploadZone.fileInputLabel}
+        onChange={handleChange}
+      />
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label={copy.uploadZone.dropZoneLabel}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={handleDrop}
+        onClick={() => inputRef.current?.click()}
+        onKeyDown={handleKeyDown}
+        className={`cursor-pointer rounded-xl border-2 border-dashed transition-colors duration-200 p-10 text-center ${dropZoneBorder}`}
+      >
         {file ? (
           <div className="space-y-2">
             <span className="text-3xl" aria-hidden="true">
@@ -261,12 +258,14 @@ function UploadZone({ onUploadSuccess }) {
       </div>
 
       {error && (
-        <p role="alert"
+        <p
+          role="alert"
           aria-live="assertive"
-          className="mt-3 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-        <span aria-hidden="true">{"⚠️"}</span>
-        {error}
-      </p>
+          className="mt-3 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400"
+        >
+          <span aria-hidden="true">{"⚠️"}</span>
+          {error}
+        </p>
       )}
 
       {status === "uploading" && (

@@ -24,7 +24,7 @@ function getToastRegion() {
 
 beforeEach(() => {
   jest.useFakeTimers();
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     window.localStorage.clear();
   }
 });

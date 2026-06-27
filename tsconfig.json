@@ -5,11 +5,7 @@
     "paths": {
       "@/*": ["./*"]
     },
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "types": ["jest", "node", "@testing-library/jest-dom"],
     "allowJs": true,
     "baseUrl": ".",

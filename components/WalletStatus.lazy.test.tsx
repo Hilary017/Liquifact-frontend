@@ -5,10 +5,10 @@ import { axe, toHaveNoViolations } from "jest-axe";
 import "@testing-library/jest-dom";
 
 // ── Mock next/dynamic so we can control lazy-load timing in tests ──
-jest.mock('next/dynamic', () => {
-  return function dynamicMock(importFunc: () => Promise<any>, options: any): React.FC<any> {
-    // Use require inside the factory to get a locally-scoped reference.
-    const LazyComponent = require('react').lazy(importFunc);
+jest.mock("next/dynamic", () => {
+  const React = require("react");
+  return function dynamicMock(importFunc: () => Promise<any>, options: any) {
+    const LazyComponent = mockReact.lazy(importFunc);
 
     const DynamicWrapper: React.FC<any> = (props) => {
       const inlineReact = require('react');
@@ -69,7 +69,7 @@ jest.mock('./WalletProvider', () => ({
   })
 }));
 
-jest.mock('./ToastProvider', () => ({
+jest.mock("./ToastProvider", () => ({
   useToast: () => ({
     success: jest.fn(),
     error: jest.fn(),
@@ -78,8 +78,8 @@ jest.mock('./ToastProvider', () => ({
 }));
 
 // Import after mocks are set up
-import WalletStatusLazy from './WalletStatusLazy';
-import { WALLET_STATES } from './WalletStatus';
+import WalletStatusLazy from "./WalletStatusLazy";
+import { WALLET_STATES } from "./WalletStatus";
 
 expect.extend(toHaveNoViolations);
 

@@ -47,6 +47,12 @@ The marketplace maps to the following object structure. The `filterInvoices()` f
 | Column is active, dir = `asc`  | ↑ button, enabled      | `ascending`     |
 | Column is **not** active       | ↓ button, **disabled** | `none`          |
 
+| State                          | UI element             | aria-sort value |
+| ------------------------------ | ---------------------- | --------------- |
+| Column is active, dir = `desc` | ↓ button, enabled      | `descending`    |
+| Column is active, dir = `asc`  | ↑ button, enabled      | `ascending`     |
+| Column is **not** active       | ↓ button, **disabled** | `none`          |
+
 | State | UI element | `aria-sort` value |
 |---|---|---|
 | Column active, dir = `desc` | ↓ button, enabled | `descending` |

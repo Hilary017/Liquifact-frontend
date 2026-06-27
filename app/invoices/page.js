@@ -1,11 +1,9 @@
-'use client';
-
-// ✨ Change your imports to look one directory level closer:
-import Header from '../components/Header';
-import UploadZone from '../components/UploadZone';
-import InvoiceList from '../components/InvoiceList';
-import { copy } from '../copy/en';
-import { useState } from 'react';
+"use client";
+import { useState } from "react";
+import { copy } from "../copy/en";
+import NavMenu from "../../components/NavMenu";
+import UploadZone from "../../components/UploadZone";
+import InvoiceList from "../../components/InvoiceList";
 
 export default function InvoicesPage() {
   const [optimisticInvoices, setOptimisticInvoices] = useState([]);

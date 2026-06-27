@@ -9,26 +9,27 @@ The LiquiFact frontend implements a client-side error logging boundary that repo
 
 ## Default Sink (Console)
 
-By default, `reportError` logs errors to the browser console via `console.error`. 
+By default, `reportError` logs errors to the browser console via `console.error`.
 
 ### Privacy & Security
+
 The default console sink implements a shallow PII/secrets scrubber. If a `context` object is provided, keys that match sensitive terms (e.g., `password`, `token`, `secret`, `authorization`, `cookie`) will be scrubbed and replaced with `[REDACTED]` before logging.
 
-*Note: This scrubber operates at the root level of the context object (shallow scrub). Be mindful of passing deeply nested sensitive data.*
+_Note: This scrubber operates at the root level of the context object (shallow scrub). Be mindful of passing deeply nested sensitive data._
 
 ## Injecting a Custom Reporter
 
-You can override the default sink to send error telemetry to a service like Sentry or Datadog. 
+You can override the default sink to send error telemetry to a service like Sentry or Datadog.
 
 To do this, use `setReporter(reporterFn)` during the application initialization phase.
 
 ```javascript
-import { setReporter } from '@/lib/observability/reportError';
-import * as Sentry from '@sentry/nextjs';
+import { setReporter } from "@/lib/observability/reportError";
+import * as Sentry from "@sentry/nextjs";
 
 setReporter((error, context) => {
   Sentry.captureException(error, {
-    extra: context
+    extra: context,
   });
 });
 ```

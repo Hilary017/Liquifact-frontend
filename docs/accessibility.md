@@ -23,15 +23,15 @@ LiquiFact Frontend is committed to meeting **WCAG 2.1 AA** accessibility sta
 
 ### What it checks
 
-| Pair | Foreground token | Background token | Threshold |
-|---|---|---|---|
-| Body text | `--color-foreground` | `--color-bg` | 4.5 : 1 (normal) |
-| Muted text | `--color-muted` | `--color-bg` | 4.5 : 1 (normal) |
-| Primary on background | `--color-primary` | `--color-bg` | 4.5 : 1 (normal) |
-| Skip‑link (bg on primary) | `--color-bg` | `--color-primary` | 4.5 : 1 (normal) |
-| Primary heading (large text) | `--color-primary` | `--color-bg` | 3.0 : 1 (large) |
-| Muted heading (large text) | `--color-muted` | `--color-bg` | 3.0 : 1 (large) |
-| Primary focus ring (UI element) | `--color-primary` | `--color-bg` | 3.0 : 1 (UI) |
+| Pair                            | Foreground token     | Background token  | Threshold        |
+| ------------------------------- | -------------------- | ----------------- | ---------------- |
+| Body text                       | `--color-foreground` | `--color-bg`      | 4.5 : 1 (normal) |
+| Muted text                      | `--color-muted`      | `--color-bg`      | 4.5 : 1 (normal) |
+| Primary on background           | `--color-primary`    | `--color-bg`      | 4.5 : 1 (normal) |
+| Skip‑link (bg on primary)       | `--color-bg`         | `--color-primary` | 4.5 : 1 (normal) |
+| Primary heading (large text)    | `--color-primary`    | `--color-bg`      | 3.0 : 1 (large)  |
+| Muted heading (large text)      | `--color-muted`      | `--color-bg`      | 3.0 : 1 (large)  |
+| Primary focus ring (UI element) | `--color-primary`    | `--color-bg`      | 3.0 : 1 (UI)     |
 
 ### How it works
 

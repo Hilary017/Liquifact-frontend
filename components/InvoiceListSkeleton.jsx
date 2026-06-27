@@ -16,11 +16,7 @@
  */
 export default function InvoiceListSkeleton({ rows = 3, ...props }) {
   return (
-    <ul
-      aria-label="Loading investable invoices"
-      aria-busy="true"
-      className="space-y-4"
-    >
+    <ul aria-label="Loading investable invoices" aria-busy="true" className="space-y-4">
       {Array.from({ length: rows }).map((_, i) => (
         <li
           // Use a prefix with index for a stable, deterministic skeleton key since rows are presentational-only
@@ -29,7 +25,6 @@ export default function InvoiceListSkeleton({ rows = 3, ...props }) {
         >
           {/* Mirrors InvoiceCard row layout */}
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-
             {/* Issuer — basis-1/4 */}
             <div className="min-w-0 flex-1 basis-1/4 space-y-1.5">
               <div className="h-3.5 w-3/4 rounded bg-slate-700" />
@@ -58,7 +53,6 @@ export default function InvoiceListSkeleton({ rows = 3, ...props }) {
             <div className="basis-auto">
               <div className="h-5 w-16 rounded-full bg-slate-700" />
             </div>
-
           </div>
         </li>
       ))}

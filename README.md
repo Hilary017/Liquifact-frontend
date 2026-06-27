@@ -466,15 +466,15 @@ The invoices page header also uses the shared `NavMenu` component, replacing the
 
 The Invest page (`app/invest/page.js`) includes an issuer-name search field and filter panel above the invoice list.
 
-| Feature | Details |
-|---------|----------|
-| **Search component** | `components/InvoiceSearch.jsx` — controlled text input |
-| **Filter panel** | `components/InvoiceFilters.jsx` — yield, risk, maturity, and currency filters |
-| **Debounce** | `200 ms` — filtering waits for settled input before updating results |
-| **Match strategy** | Case-insensitive substring match on the `issuer` field |
-| **Screen-reader announcements** | An `aria-live="polite"` region announces the result count on every filter change (e.g. *"2 of 3 invoices match"*) |
-| **No-match state** | A distinct empty state is shown when filters produce zero results, separate from the empty-marketplace state |
-| **Pagination** | `components/Pagination.jsx` — page controls appear when filtered results exceed `PAGE_SIZE` (default 10) |
+| Feature                         | Details                                                                                                           |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Search component**            | `components/InvoiceSearch.jsx` — controlled text input                                                            |
+| **Filter panel**                | `components/InvoiceFilters.jsx` — yield, risk, maturity, and currency filters                                     |
+| **Debounce**                    | `200 ms` — filtering waits for settled input before updating results                                              |
+| **Match strategy**              | Case-insensitive substring match on the `issuer` field                                                            |
+| **Screen-reader announcements** | An `aria-live="polite"` region announces the result count on every filter change (e.g. _"2 of 3 invoices match"_) |
+| **No-match state**              | A distinct empty state is shown when filters produce zero results, separate from the empty-marketplace state      |
+| **Pagination**                  | `components/Pagination.jsx` — page controls appear when filtered results exceed `PAGE_SIZE` (default 10)          |
 
 ---
 

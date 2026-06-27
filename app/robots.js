@@ -33,8 +33,8 @@ export async function GET() {
 export default function robots() {
   return {
     rules: {
-      userAgent: '*',
-      allow: '/',
+      userAgent: "*",
+      allow: "/",
     },
     sitemap: `${baseUrl}/sitemap.xml`,
   };

@@ -17,12 +17,12 @@ Contributors must use these tokens rather than hardcoding arbitrary HEX values, 
 
 These colors are defined custom in `app/globals.css` under the `@theme inline` block.
 
-| CSS Variable | Tailwind Utility | HEX Value | Intended Usage |
-| :--- | :--- | :--- | :--- |
-| `--color-bg` | `bg-bg` / `bg-slate-950` | `#020617` | Base background color of the application. |
-| `--color-primary` | `text-primary` / `bg-primary` | `#22d3ee` | Primary brand accent color (cyan-400) used for links, brand badges, and active states. |
-| `--color-foreground` | `text-foreground` | `#f1f5f9` | Primary text color (slate-100) for body text and headers. |
-| `--color-muted` | `text-muted` | `#94a3b8` | Muted text color (slate-400) for helper text, labels, and secondary information. |
+| CSS Variable         | Tailwind Utility              | HEX Value | Intended Usage                                                                         |
+| :------------------- | :---------------------------- | :-------- | :------------------------------------------------------------------------------------- |
+| `--color-bg`         | `bg-bg` / `bg-slate-950`      | `#020617` | Base background color of the application.                                              |
+| `--color-primary`    | `text-primary` / `bg-primary` | `#22d3ee` | Primary brand accent color (cyan-400) used for links, brand badges, and active states. |
+| `--color-foreground` | `text-foreground`             | `#f1f5f9` | Primary text color (slate-100) for body text and headers.                              |
+| `--color-muted`      | `text-muted`                  | `#94a3b8` | Muted text color (slate-400) for helper text, labels, and secondary information.       |
 
 ---
 
@@ -30,14 +30,14 @@ These colors are defined custom in `app/globals.css` under the `@theme inline` b
 
 Below is a contrast-compliance matrix for the custom colors, validated against the WCAG 2.1 AA and AAA standards.
 
-| Text Color | Background Color | Contrast Ratio | WCAG Compliance | Status |
-| :--- | :--- | :--- | :--- | :--- |
-| `--color-foreground` (`#f1f5f9`) | `--color-bg` (`#020617`) | **18.2:1** | AAA (Pass, ≥ 7:1) | **Safe to use** |
-| `--color-primary` (`#22d3ee`) | `--color-bg` (`#020617`) | **11.1:1** | AAA (Pass, ≥ 7:1) | **Safe to use** |
-| `--color-muted` (`#94a3b8`) | `--color-bg` (`#020617`) | **7.8:1** | AAA (Pass, ≥ 7:1) | **Safe to use** |
-| `--color-bg` (`#020617`) | `--color-primary` (`#22d3ee`) | **11.1:1** | AAA (Pass, ≥ 7:1) | **Safe to use** (e.g., skip-link on focus) |
-| `--color-foreground` (`#f1f5f9`) | `--color-primary` (`#22d3ee`) | **1.6:1** | Fail (Limit < 4.5:1) | **DO NOT USE** (Insufficient contrast) |
-| `--color-muted` (`#94a3b8`) | `--color-primary` (`#22d3ee`) | **1.3:1** | Fail (Limit < 4.5:1) | **DO NOT USE** (Insufficient contrast) |
+| Text Color                       | Background Color              | Contrast Ratio | WCAG Compliance      | Status                                     |
+| :------------------------------- | :---------------------------- | :------------- | :------------------- | :----------------------------------------- |
+| `--color-foreground` (`#f1f5f9`) | `--color-bg` (`#020617`)      | **18.2:1**     | AAA (Pass, ≥ 7:1)    | **Safe to use**                            |
+| `--color-primary` (`#22d3ee`)    | `--color-bg` (`#020617`)      | **11.1:1**     | AAA (Pass, ≥ 7:1)    | **Safe to use**                            |
+| `--color-muted` (`#94a3b8`)      | `--color-bg` (`#020617`)      | **7.8:1**      | AAA (Pass, ≥ 7:1)    | **Safe to use**                            |
+| `--color-bg` (`#020617`)         | `--color-primary` (`#22d3ee`) | **11.1:1**     | AAA (Pass, ≥ 7:1)    | **Safe to use** (e.g., skip-link on focus) |
+| `--color-foreground` (`#f1f5f9`) | `--color-primary` (`#22d3ee`) | **1.6:1**      | Fail (Limit < 4.5:1) | **DO NOT USE** (Insufficient contrast)     |
+| `--color-muted` (`#94a3b8`)      | `--color-primary` (`#22d3ee`) | **1.3:1**      | Fail (Limit < 4.5:1) | **DO NOT USE** (Insufficient contrast)     |
 
 ---
 
@@ -45,18 +45,18 @@ Below is a contrast-compliance matrix for the custom colors, validated against t
 
 LiquiFact relies on standard Tailwind CSS v4 spacing tokens. The spacing scale is relative to root-font size (`1rem = 16px`).
 
-| Tailwind Class Prefix | Rem Value | Pixel Value | Common Use Cases |
-| :--- | :--- | :--- | :--- |
-| `0.5` (e.g. `p-0.5`) | `0.125rem` | `2px` | Extra tight padding/gaps, border layouts. |
-| `1` (e.g. `p-1`) | `0.25rem` | `4px` | Tight gap between icons and text, small borders. |
-| `1.5` (e.g. `p-1.5`) | `0.375rem` | `6px` | Compact button/badge padding. |
-| `2` (e.g. `p-2`) | `0.5rem` | `8px` | General padding inside small alerts or inputs. |
-| `3` (e.g. `p-3`) | `0.75rem` | `12px` | Padding for table cells, side-by-side elements. |
-| `4` (e.g. `p-4`) | `1.0rem` | `16px` | Standard spacing; padding inside cards/drawers. |
-| `5` (e.g. `p-5`) | `1.25rem` | `20px` | Layout margins, larger block container padding. |
-| `6` (e.g. `p-6`) | `1.5rem` | `24px` | Section padding, modal header spacing. |
-| `8` (e.g. `p-8`) | `2.0rem` | `32px` | Outer shell container padding for large screens. |
-| `12` (e.g. `p-12`) | `3.0rem` | `48px` | Large hero page layouts. |
+| Tailwind Class Prefix | Rem Value  | Pixel Value | Common Use Cases                                 |
+| :-------------------- | :--------- | :---------- | :----------------------------------------------- |
+| `0.5` (e.g. `p-0.5`)  | `0.125rem` | `2px`       | Extra tight padding/gaps, border layouts.        |
+| `1` (e.g. `p-1`)      | `0.25rem`  | `4px`       | Tight gap between icons and text, small borders. |
+| `1.5` (e.g. `p-1.5`)  | `0.375rem` | `6px`       | Compact button/badge padding.                    |
+| `2` (e.g. `p-2`)      | `0.5rem`   | `8px`       | General padding inside small alerts or inputs.   |
+| `3` (e.g. `p-3`)      | `0.75rem`  | `12px`      | Padding for table cells, side-by-side elements.  |
+| `4` (e.g. `p-4`)      | `1.0rem`   | `16px`      | Standard spacing; padding inside cards/drawers.  |
+| `5` (e.g. `p-5`)      | `1.25rem`  | `20px`      | Layout margins, larger block container padding.  |
+| `6` (e.g. `p-6`)      | `1.5rem`   | `24px`      | Section padding, modal header spacing.           |
+| `8` (e.g. `p-8`)      | `2.0rem`   | `32px`      | Outer shell container padding for large screens. |
+| `12` (e.g. `p-12`)    | `3.0rem`   | `48px`      | Large hero page layouts.                         |
 
 ---
 
@@ -64,14 +64,14 @@ LiquiFact relies on standard Tailwind CSS v4 spacing tokens. The spacing scale i
 
 The application uses standard Tailwind CSS border-radius utilities to round the corners of panels, buttons, inputs, and cards.
 
-| Tailwind Class | Value | Intended Usage |
-| :--- | :--- | :--- |
-| `rounded-sm` | `0.125rem` (2px) | Very small elements (checkboxes, status dots). |
-| `rounded` / `rounded-md` | `0.375rem` (6px) | Standard interactive elements (buttons, inputs). |
-| `rounded-lg` | `0.5rem` (8px) | Inner card panels, select dropdowns. |
-| `rounded-xl` | `0.75rem` (12px) | Outer cards, dashboard widget containers. |
-| `rounded-2xl` | `1rem` (16px) | Large components (modals, upload zones). |
-| `rounded-full` | `9999px` | Badges, status indicator pills, circular buttons. |
+| Tailwind Class           | Value            | Intended Usage                                    |
+| :----------------------- | :--------------- | :------------------------------------------------ |
+| `rounded-sm`             | `0.125rem` (2px) | Very small elements (checkboxes, status dots).    |
+| `rounded` / `rounded-md` | `0.375rem` (6px) | Standard interactive elements (buttons, inputs).  |
+| `rounded-lg`             | `0.5rem` (8px)   | Inner card panels, select dropdowns.              |
+| `rounded-xl`             | `0.75rem` (12px) | Outer cards, dashboard widget containers.         |
+| `rounded-2xl`            | `1rem` (16px)    | Large components (modals, upload zones).          |
+| `rounded-full`           | `9999px`         | Badges, status indicator pills, circular buttons. |
 
 ---
 
@@ -81,10 +81,10 @@ Typography is handled via Next.js `next/font/google` configuration (Geist Sans a
 
 ### Font Families
 
-| CSS Variable | Tailwind Utility | Font Family | Intended Usage |
-| :--- | :--- | :--- | :--- |
-| `--font-sans` | `font-sans` | Geist Sans | Default body text, form fields, and main headers. |
-| `--font-mono` | `font-mono` | Geist Mono | Monospace/code font for addresses, invoice hashes, and balances. |
+| CSS Variable  | Tailwind Utility | Font Family | Intended Usage                                                   |
+| :------------ | :--------------- | :---------- | :--------------------------------------------------------------- |
+| `--font-sans` | `font-sans`      | Geist Sans  | Default body text, form fields, and main headers.                |
+| `--font-mono` | `font-mono`      | Geist Mono  | Monospace/code font for addresses, invoice hashes, and balances. |
 
 ### Font Weights
 
@@ -93,13 +93,13 @@ Typography is handled via Next.js `next/font/google` configuration (Geist Sans a
 
 ### Font Sizes
 
-| Tailwind Class | Size (Rem) | Size (Pixels) | Intended Usage |
-| :--- | :--- | :--- | :--- |
-| `text-xs` | `0.75rem` | `12px` | Small caption/helper text, secondary metadata. |
-| `text-sm` | `0.875rem` | `14px` | Standard body text, compact form inputs. |
-| `text-base` | `1.0rem` | `16px` | Large body text, paragraph text. |
-| `text-lg` | `1.125rem` | `18px` | Small headings, list item titles. |
-| `text-xl` | `1.25rem` | `20px` | Main subsection headings. |
-| `text-2xl` | `1.5rem` | `24px` | Secondary section headers. |
-| `text-3xl` | `1.875rem` | `30px` | Main page title headings. |
-| `text-4xl` | `2.25rem` | `36px` | Large hero page titles. |
+| Tailwind Class | Size (Rem) | Size (Pixels) | Intended Usage                                 |
+| :------------- | :--------- | :------------ | :--------------------------------------------- |
+| `text-xs`      | `0.75rem`  | `12px`        | Small caption/helper text, secondary metadata. |
+| `text-sm`      | `0.875rem` | `14px`        | Standard body text, compact form inputs.       |
+| `text-base`    | `1.0rem`   | `16px`        | Large body text, paragraph text.               |
+| `text-lg`      | `1.125rem` | `18px`        | Small headings, list item titles.              |
+| `text-xl`      | `1.25rem`  | `20px`        | Main subsection headings.                      |
+| `text-2xl`     | `1.5rem`   | `24px`        | Secondary section headers.                     |
+| `text-3xl`     | `1.875rem` | `30px`        | Main page title headings.                      |
+| `text-4xl`     | `2.25rem`  | `36px`        | Large hero page titles.                        |

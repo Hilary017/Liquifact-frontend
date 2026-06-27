@@ -7,9 +7,32 @@ import { sanitize } from "@/utils/sanitizeUrl";
 
 "use client";
 
-// Mock invoice data — replace with real API call once the backend endpoint
-// is available (follow-up: link backend issue here).
-// Contract per item: { id, issuer, amount, currency, dueDate, yield, status }
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import Button from "@/components/Button";
+import ErrorBanner from "@/components/ErrorBanner";
+import InvoiceCard from "@/components/InvoiceCard";
+import InvoiceListSkeleton from "@/components/InvoiceListSkeleton";
+import Pagination from "@/components/Pagination";
+import InvoiceFilters, {
+  DEFAULT_FILTERS,
+  parseSortState,
+  hasActiveFilters,
+} from "@/components/InvoiceFilters";
+import { copy } from "../copy/en";
+import { fetchInvestableInvoices } from "../../lib/api/invoices";
+import InvoiceSearch from "@/components/InvoiceSearch";
+
+export const PAGE_SIZE = 10;
+
+/**
+ * Mock invoice data – replace with real API call once the backend endpoint
+ * is available (follow-up: link backend issue here).
+ *
+ * Contract per item: { id, issuer, amount, currency, dueDate, yield, status }
+ * NOTE: yield values are illustrative; contracts use on-chain basis points and actual settlement is at maturity.
+ */
 const MOCK_INVOICES = [
   {
     id: "inv-001",
@@ -47,10 +70,11 @@ export default function InvestPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Initialise state from URL query parameters
-  const initialSearch = sanitize(searchParams.get("q")) ?? "";
-  const initialSort = sanitize(searchParams.get("sort")) ?? "";
-  const initialFilters = sanitize(searchParams.get("filters"))?.split(",").filter(Boolean) ?? [];
+  const [invoices, setInvoices] = useState(null); // null = loading
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [paginationAnnouncement, setPaginationAnnouncement] = useState("");
+  const [loadError, setLoadError] = useState("");
 
   const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [sortOption, setSortOption] = useState(initialSort);
@@ -105,7 +129,48 @@ export default function InvestPage() {
 
   const allInvoices = Array.isArray(invoices) ? invoices : [];
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  const filteredInvoices = (() => {
+    let list = allInvoices;
+
+    // Text search
+    if (debouncedQuery.trim()) {
+      const q = debouncedQuery.trim().toLowerCase();
+      list = list.filter(
+        (inv) => inv.issuer?.toLowerCase().includes(q) || inv.id?.toLowerCase().includes(q)
+      );
+    }
+
+    // Currency filter
+    if (filters.currency) {
+      list = list.filter((inv) => inv.currency === filters.currency);
+    }
+
+    // Yield range filter
+    if (filters.yieldMin !== "") {
+      const min = parseFloat(filters.yieldMin);
+      list = list.filter((inv) => parseYield(inv.yield) >= min);
+    }
+    if (filters.yieldMax !== "") {
+      const max = parseFloat(filters.yieldMax);
+      list = list.filter((inv) => parseYield(inv.yield) <= max);
+    }
+
+    // Maturity date range filter
+    if (filters.maturityFrom) {
+      list = list.filter((inv) => inv.dueDate >= filters.maturityFrom);
+    }
+    if (filters.maturityTo) {
+      list = list.filter((inv) => inv.dueDate <= filters.maturityTo);
+    }
+
+    // Sort with direction
+    list = applySortToList(list, filters);
+
+    return list;
+  })();
+
+  const visibleInvoices = filteredInvoices.slice(0, visibleCount);
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <header className="border-b border-slate-800 px-6 py-4">

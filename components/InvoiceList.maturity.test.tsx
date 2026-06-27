@@ -35,9 +35,7 @@ describe("daysUntilMaturity", () => {
   it("is not sensitive to the time-of-day component of now", () => {
     const morning = new Date("2026-06-26T00:01:00Z");
     const night = new Date("2026-06-26T23:59:00Z");
-    expect(daysUntilMaturity("2026-07-01", morning)).toBe(
-      daysUntilMaturity("2026-07-01", night),
-    );
+    expect(daysUntilMaturity("2026-07-01", morning)).toBe(daysUntilMaturity("2026-07-01", night));
   });
 
   it("defaults now to today (smoke test — just checks it returns a number)", () => {
@@ -105,10 +103,7 @@ const REF = new Date("2026-06-26T12:00:00Z");
 
 describe("InvoiceList", () => {
   it("renders one card per invoice", () => {
-    const invoices = [
-      baseInvoice,
-      { ...baseInvoice, id: "inv-002", issuer: "Beta Co" },
-    ];
+    const invoices = [baseInvoice, { ...baseInvoice, id: "inv-002", issuer: "Beta Co" }];
     render(<InvoiceList invoices={invoices} now={REF} />);
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
   });

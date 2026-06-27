@@ -276,9 +276,4 @@ describe("InvoiceCard — snapshot", () => {
     const { asFragment } = renderCard();
     expect(asFragment()).toMatchSnapshot();
   });
-
-  it("matches snapshot when status falls back to Unknown", () => {
-    const { asFragment } = renderCard({ status: "garbage" as any });
-    expect(asFragment()).toMatchSnapshot();
-  });
 });

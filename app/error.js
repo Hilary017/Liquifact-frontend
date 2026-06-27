@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { reportError } from '../lib/observability/reportError';
+import { useEffect } from "react";
+import { reportError } from "../lib/observability/reportError";
 
 export default function GlobalError({ error, reset }) {
   useEffect(() => {

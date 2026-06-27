@@ -75,11 +75,10 @@ export default function RootLayout({ children }) {
         eliminating the flash of incorrect theme (FOIT-equivalent for themes).
       */}
       <head>
+        {/* eslint-disable-next-line react/no-danger -- Static constant; not user-supplied data. Required for pre-hydration theme paint. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {/* Skip link: first focusable element so keyboard users can bypass the header */}
         <a href="#main-content" className="skip-link">
           Skip to content

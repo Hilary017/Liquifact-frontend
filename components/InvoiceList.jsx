@@ -1,13 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
-import ErrorBanner from './ErrorBanner';
-import EmptyState, { InvoiceEmptyIllustration } from './EmptyState';
-import InvoiceListSkeleton from './InvoiceListSkeleton';
-import { copy } from '../app/copy/en';
-import { fetchInvestableInvoices } from '../lib/api/invoices';
-import InvoiceSearch from './InvoiceSearch';
-import InvoiceFilters from './InvoiceFilters';
+import { useEffect, useMemo, useState } from "react";
+import ErrorBanner from "./ErrorBanner";
+import EmptyState, { InvoiceEmptyIllustration } from "./EmptyState";
+import InvoiceListSkeleton from "./InvoiceListSkeleton";
+import { copy } from "../app/copy/en";
 
 const INVOICE_STATUSES = {
   PENDING_TOKENIZATION: "Pending tokenization",
@@ -16,9 +13,9 @@ const INVOICE_STATUSES = {
   SETTLED: "Settled",
 };
 
-const user={
-name:'boss'
-}
+const user = {
+  name: "boss",
+};
 
 const STATUS_STYLES = {
   [INVOICE_STATUSES.PENDING_TOKENIZATION]:
@@ -55,13 +52,13 @@ async function copyToClipboard(text) {
     return;
   }
   // Guarded execCommand fallback for browsers without the Clipboard API.
-  const el = document.createElement('textarea');
+  const el = document.createElement("textarea");
   el.value = text;
-  el.setAttribute('readonly', '');
-  el.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
+  el.setAttribute("readonly", "");
+  el.style.cssText = "position:fixed;left:-9999px;top:-9999px";
   document.body.appendChild(el);
   el.select();
-  document.execCommand('copy');
+  document.execCommand("copy");
   document.body.removeChild(el);
 }
 
@@ -98,21 +95,41 @@ function AddressCopyButton({ address }) {
       <button
         type="button"
         onClick={handleCopy}
-        aria-label={copied ? 'Copied!' : `Copy issuer address ${display}`}
-        title={copied ? 'Copied!' : 'Copy issuer address'}
+        aria-label={copied ? "Copied!" : `Copy issuer address ${display}`}
+        title={copied ? "Copied!" : "Copy issuer address"}
         className="inline-flex h-5 w-5 items-center justify-center rounded text-slate-500 hover:text-slate-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-cyan-400 transition-colors"
       >
         {copied ? (
-          <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            aria-hidden="true"
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="20 6 9 17 4 12" />
           </svg>
         ) : (
-          <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            aria-hidden="true"
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
           </svg>
         )}
-        <span className="sr-only">{copied ? 'Copied!' : 'Copy'}</span>
+        <span className="sr-only">{copied ? "Copied!" : "Copy"}</span>
       </button>
       {copied && (
         <span role="status" aria-live="polite" className="text-xs text-emerald-400">
@@ -200,9 +217,7 @@ export default function InvoiceList({
     };
   }, [loadInvoices]);
 
-  const statusMessage = loadError
-    ? 'Invoice list failed to load.'
-    : (invoices === null ? 'Loading invoices.' : getInvoiceAnnouncement(mergedInvoices));
+  // Compute status message inline in render
 
   if (loadError) {
     return (

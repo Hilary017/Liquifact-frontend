@@ -1,5 +1,5 @@
-import Link from 'next/link';
-import { copy } from '../app/copy/en';
+import Link from "next/link";
+import { copy } from "../app/copy/en";
 
 /**
  * @typedef {Object} FooterLink

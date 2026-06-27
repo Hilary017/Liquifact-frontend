@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 /**
  * The three theme options the user can cycle through.
  * @type {readonly string[]}
  */
-export const THEMES = /** @type {const} */ (['light', 'dark', 'system']);
+export const THEMES = /** @type {const} */ (["light", "dark", "system"]);
 
 /** localStorage key where the preference is persisted. */
-export const THEME_STORAGE_KEY = 'liquifact-theme';
+export const THEME_STORAGE_KEY = "liquifact-theme";
 
 /**
  * Determine the effective visual theme from a stored preference.
@@ -19,13 +19,13 @@ export const THEME_STORAGE_KEY = 'liquifact-theme';
  * @returns {'light'|'dark'}
  */
 export function resolveTheme(pref) {
-  if (pref === 'light') return 'light';
-  if (pref === 'dark') return 'dark';
+  if (pref === "light") return "light";
+  if (pref === "dark") return "dark";
   // 'system' – query the OS preference; default to 'dark' in SSR/test env
-  if (typeof window !== 'undefined' && window.matchMedia) {
-    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  if (typeof window !== "undefined" && window.matchMedia) {
+    return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
   }
-  return 'dark';
+  return "dark";
 }
 
 /**
@@ -41,7 +41,7 @@ export function readStoredTheme() {
   } catch {
     // localStorage unavailable (private browsing, SSR, etc.)
   }
-  return 'system';
+  return "system";
 }
 
 /**
@@ -52,7 +52,7 @@ export function readStoredTheme() {
  */
 export function applyTheme(pref) {
   const effective = resolveTheme(pref);
-  document.documentElement.setAttribute('data-theme', effective);
+  document.documentElement.setAttribute("data-theme", effective);
 }
 
 /**
@@ -67,9 +67,9 @@ export function applyTheme(pref) {
  * @param {object}  [props]
  * @param {string}  [props.className]  – Extra classes on the root button
  */
-export default function ThemeToggle({ className = '' }) {
+export default function ThemeToggle({ className = "" }) {
   // Initialise from localStorage only on the client (avoids SSR mismatch)
-  const [preference, setPreference] = useState('system');
+  const [preference, setPreference] = useState("system");
 
   useEffect(() => {
     setPreference(readStoredTheme());
@@ -87,13 +87,13 @@ export default function ThemeToggle({ className = '' }) {
 
   // Also re-resolve when the OS preference changes while 'system' is active
   useEffect(() => {
-    if (preference !== 'system') return;
-    if (typeof window === 'undefined' || !window.matchMedia) return;
+    if (preference !== "system") return;
+    if (typeof window === "undefined" || !window.matchMedia) return;
 
-    const mq = window.matchMedia('(prefers-color-scheme: light)');
-    const handler = () => applyTheme('system');
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
+    const mq = window.matchMedia("(prefers-color-scheme: light)");
+    const handler = () => applyTheme("system");
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
   }, [preference]);
 
   const handleClick = () => {
@@ -106,9 +106,18 @@ export default function ThemeToggle({ className = '' }) {
   const ICONS = {
     light: (
       // Sun
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-        aria-hidden="true" focusable="false">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+        focusable="false"
+      >
         <circle cx="12" cy="12" r="5" />
         <line x1="12" y1="1" x2="12" y2="3" />
         <line x1="12" y1="21" x2="12" y2="23" />
@@ -122,17 +131,35 @@ export default function ThemeToggle({ className = '' }) {
     ),
     dark: (
       // Moon
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-        aria-hidden="true" focusable="false">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+        focusable="false"
+      >
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
       </svg>
     ),
     system: (
       // Monitor
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-        aria-hidden="true" focusable="false">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+        focusable="false"
+      >
         <rect x="2" y="3" width="20" height="14" rx="2" />
         <line x1="8" y1="21" x2="16" y2="21" />
         <line x1="12" y1="17" x2="12" y2="21" />
@@ -141,9 +168,9 @@ export default function ThemeToggle({ className = '' }) {
   };
 
   const LABELS = {
-    light: 'Theme: Light (click for Dark)',
-    dark: 'Theme: Dark (click for System)',
-    system: 'Theme: System (click for Light)',
+    light: "Theme: Light (click for Dark)",
+    dark: "Theme: Dark (click for System)",
+    system: "Theme: System (click for Light)",
   };
 
   const nextPref = THEMES[(THEMES.indexOf(preference) + 1) % THEMES.length];
@@ -155,19 +182,19 @@ export default function ThemeToggle({ className = '' }) {
       type="button"
       onClick={handleClick}
       aria-label={LABELS[preference]}
-      aria-pressed={preference !== 'system'}
+      aria-pressed={preference !== "system"}
       title={`Current theme: ${capitalise(preference)}`}
       data-theme-pref={preference}
       data-theme-next={nextPref}
       className={[
-        'rounded-lg p-2 transition-colors',
-        'text-slate-300 hover:text-cyan-400 hover:bg-slate-800',
-        'dark:text-slate-300 dark:hover:text-cyan-400',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400',
+        "rounded-lg p-2 transition-colors",
+        "text-slate-300 hover:text-cyan-400 hover:bg-slate-800",
+        "dark:text-slate-300 dark:hover:text-cyan-400",
+        "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400",
         className,
       ]
         .filter(Boolean)
-        .join(' ')}
+        .join(" ")}
     >
       {ICONS[preference]}
     </button>
