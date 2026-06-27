@@ -9,6 +9,7 @@ Shared UI components for the LiquiFact frontend. All components live under `comp
 - [EmptyState](#emptystate)
 - [ErrorBanner](#errorbanner)
 - [Footer](#footer)
+- [Hooks](#hooks)
 - [InvoiceList](#invoicelist)
 - [InvoiceListSkeleton](#invoicelistskeleton)
 - [InvoiceSearch](#invoicesearch)
@@ -620,6 +621,81 @@ import ThemeToggle from '@/components/ThemeToggle';
 
 // With extra positioning class
 <ThemeToggle className="ml-4" />
+```
+
+---
+
+## Hooks
+
+Reusable React hooks that live under `lib/hooks/`. Hooks are the canonical home for shared persistence and behaviour so any feature can adopt the same contract without re-implementing edge cases (SSR safety, quota errors, type preservation).
+
+### `useLocalStorage`
+
+A drop-in `useState`-shaped hook for `window.localStorage` with **SSR-safe hydration**, **JSON parse guarding**, and **quota/SecurityError guarding**. The single shared implementation that wallet / preferences / any future persistable feature must consume.
+
+**File:** `lib/hooks/useLocalStorage.js`
+
+#### Signature
+
+```jsx
+const [value, setValue] = useLocalStorage < T > (key, defaultValue);
+```
+
+| Argument         | Type                               | Description                                                                         |
+| ---------------- | ---------------------------------- | ----------------------------------------------------------------------------------- |
+| `key`            | `string`                           | Required. Storage key. Empty / non-string keys are defensive-no-ops (no throw).     |
+| `defaultValue`   | `T \| (() => T)`                   | Initial value or lazy initialiser. Returned on the very first render.               |
+| Returns value    | `T`                                | Current state. Defaults to `defaultValue` on first render, then rehydrates.         |
+| Returns setValue | `(next \| (prev) => next) => void` | Stable setter. Accepts either a value or a functional updater (mirrors `useState`). |
+
+#### SSR-safety contract
+
+- **Initial render never reads from storage.** Whatever `defaultValue` is, that is what every consumer sees on first render (server-side and the first client render). This is the rule that keeps React hydration safe in a Next.js app router context.
+- The actual read happens inside `useEffect`, after the component mounts on the client. JSON-parse failures, missing entries, and `localStorage.getItem` itself throwing (e.g. private-browsing SecurityError) are **all swallowed** — the hook falls back to `defaultValue` so React never sees an exception.
+- `setValue` does not access `window` at module scope or during render; the window check sits inside the setter callback so the rule is enforced on every write.
+
+#### Write-through contract
+
+- `setValue(next)` writes `JSON.stringify(next)` to `localStorage` AND updates React state in lock-step. **Quota errors and SecurityError are swallowed** so the UI keeps working even when the browser refuses the write — React state still updates so the in-memory value is correct.
+- `setValue(prev => next)` is the canonical functional updater form. Sequential calls inside `act()` correctly accumulate.
+- `setValue(undefined)` removes the storage key (`removeItem`) and leaves React state at `undefined`. This is the React idiom for "unset"; no other value triggers a removal.
+
+#### Stability
+
+- The setter is referentially stable across renders when `key` does not change. Safe to put in dependency arrays.
+- Changing `key` mid-lifecycle triggers a re-read from `localStorage` for the new key.
+
+#### Caveats (intentional non-features)
+
+- **No auto-rehydration after mount.** Within the same tab, two `useLocalStorage('key', …)` instances do **not** auto-sync each other's writes — each one rehydrates only when it first mounts (initial render → mount effect) or when its `key` prop changes. Consumers that need shared-state semantics across many components should centralise through React Context on top of this hook.
+- **No cross-tab sync.** A write in tab A does not auto-propagate to tab B. The pre-paint inline script in `app/layout.js` (theme toggle) handles initial-paint sync; live cross-tab sync is out of scope.
+- **No automatic debouncing.** Rapid `setValue` calls produce one `setItem` per call. The setter is cheap, but consumers that need debouncing should layer it on top (typical for text inputs).
+- **Stored value types must round-trip through JSON.** Functions, classes, and other non-serialisable values will not survive a round-trip. Compose with a serialisation layer if you need that.
+
+#### Example
+
+```jsx
+'use client';
+
+import { useLocalStorage } from '@/lib/hooks/useLocalStorage';
+
+// Primitive — typed default surfaces string.
+const [theme, setTheme] = useLocalStorage<'light' | 'dark' | 'system'>(
+  'lhf:theme',
+  'system',
+);
+
+// Object — generic preserves the shape.
+const [wallet, setWallet] = useLocalStorage<{ address?: string; network?: string }>(
+  'lhf:wallet-snapshot',
+  {},
+);
+
+// Functional updater.
+setWallet((prev) => ({ ...prev, network: 'PUBLIC' }));
+
+// Reset.
+setWallet(undefined);
 ```
 
 ---
