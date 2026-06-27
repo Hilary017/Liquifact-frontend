@@ -187,6 +187,9 @@ We welcome UI improvements, new pages (e.g., invoice upload, marketplace), and S
 ## UI Components
 
 See COMPONENTS.md for the full component library reference — props, accessibility notes, and usage examples for every shared component (`ErrorBanner`, `Footer`, `InvoiceListSkeleton`, `ToastProvider`, `UploadZone`, `WalletProvider`, `WalletStatus`).
+
+- **UploadZone Progress Indicator**: During the upload phase, if a `progress` prop (number between `0` and `100`) is supplied to `UploadZone`, a determinate progress bar (`role="progressbar"`) is displayed. If no `progress` is supplied, it falls back to an indeterminate spinner. Smooth transitions are disabled when `prefers-reduced-motion` is active.
+
 ## Invoice List
 
 The invoices page now renders an SME invoice table below `UploadZone` using `InvoiceList`.
@@ -619,6 +622,8 @@ We welcome UI improvements, new pages (e.g. invoice upload, marketplace), and St
 ## UI Components
 
 See [COMPONENTS.md](COMPONENTS.md) for the full component library reference — props, accessibility notes, and usage examples for every shared component (`ErrorBanner`, `Footer`, `InvoiceListSkeleton`, `ToastProvider`, `UploadZone`, `WalletProvider`, `WalletStatus`).
+
+- **UploadZone Progress Indicator**: During the upload phase, if a `progress` prop (number between `0` and `100`) is supplied to `UploadZone`, a determinate progress bar (`role="progressbar"`) is displayed. If no `progress` is supplied, it falls back to an indeterminate spinner. Smooth transitions are disabled when `prefers-reduced-motion` is active.
 
 ## Invoice List
 

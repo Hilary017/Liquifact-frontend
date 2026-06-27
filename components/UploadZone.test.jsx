@@ -137,6 +137,29 @@ describe("UploadZone", () => {
     expect(submitBtn).toBeEnabled();
   });
 
+  it("renders determinate progress bar when progress prop is provided", async () => {
+    global.fetch = jest.fn().mockReturnValue(new Promise(() => {})); // stay in uploading
+    const { rerender } = render(<UploadZone progress={45.5} />);
+
+    const file = createMockFile();
+    fireEvent.change(screen.getByLabelText(/select pdf invoice file/i), {
+      target: { files: [file] },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /upload & tokenize invoice/i }));
+
+    const progressbar = screen.getByRole("progressbar");
+    expect(progressbar).toBeInTheDocument();
+    expect(progressbar).toHaveAttribute("aria-valuenow", "46");
+    expect(progressbar).toHaveAttribute("aria-valuemin", "0");
+    expect(progressbar).toHaveAttribute("aria-valuemax", "100");
+    expect(screen.getByText("46%")).toBeInTheDocument();
+
+    // Verify indeterminate fallback
+    rerender(<UploadZone progress={undefined} />);
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+  });
+
   it('shows tokenizing status between upload and success when server returns tokenizationDelay', async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,

@@ -82,7 +82,17 @@ function Spinner({ className = "" }) {
   );
 }
 
-function UploadZone({ onUploadSuccess }) {
+/**
+ * UploadZone Component
+ * Renders a drag-and-drop file upload area for invoice PDFs.
+ * Handles file validation (MIME-type, size, and magic bytes) and manages
+ * upload states (idle, uploading, tokenizing, success, error).
+ *
+ * @param {Object} props - Component properties
+ * @param {Function} [props.onUploadSuccess] - Callback triggered when the invoice upload completes successfully. Passes the generated invoice metadata object.
+ * @param {number} [props.progress] - Optional upload progress percentage (0 to 100). If provided as a number during the upload status, a determinate progress bar is rendered. If undefined, it falls back to an indeterminate spinner.
+ */
+function UploadZone({ onUploadSuccess, progress }) {
   const inputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
   const [file, setFile] = useState(null);
@@ -269,14 +279,34 @@ function UploadZone({ onUploadSuccess }) {
       )}
 
       {status === "uploading" && (
-        <p
+        <div
           role="status"
           aria-live="polite"
-          className="mt-3 flex items-start gap-2 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-400"
+          className="mt-3 flex flex-col gap-2 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-400"
         >
-          <Spinner />
-          {copy.uploadZone.statusUploading}
-        </p>
+          <div className="flex items-center gap-2">
+            {typeof progress !== "number" && <Spinner />}
+            <span id="upload-status-text">{copy.uploadZone.statusUploading}</span>
+            {typeof progress === "number" && (
+              <span className="ml-auto font-medium">{Math.round(progress)}%</span>
+            )}
+          </div>
+          {typeof progress === "number" && (
+            <div
+              role="progressbar"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow={Math.round(progress)}
+              aria-labelledby="upload-status-text"
+              className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-cyan-950/50"
+            >
+              <div
+                className="h-full bg-cyan-400 transition-all duration-300 motion-reduce:transition-none"
+                style={{ width: `${Math.round(progress)}%` }}
+              />
+            </div>
+          )}
+        </div>
       )}
 
       {status === "tokenizing" && (
