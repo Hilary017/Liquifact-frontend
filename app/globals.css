@@ -1,26 +1,96 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+  LiquiFact global theming tokens.
+  Theme is driven by a `data-theme` attribute set on <html> by the
+  ThemeToggle component (and the pre-paint inline script in layout.js).
+
+  Supported values: data-theme="dark" | data-theme="light"
+
+  Token mapping:
+  - --color-bg       : page background
+  - --color-fg       : primary text
+  - --color-muted    : secondary / muted text
+  - --color-surface  : card / panel background
+  - --color-border   : subtle border colour
+  - --color-primary  : cyan brand accent (#22d3ee / cyan-400)
+*/
+
+/* ── Dark theme (default — matches existing slate-950 palette) ─────────────── */
+:root,
+[data-theme="dark"] {
+  --color-bg: #020617;       /* slate-950 */
+  --color-fg: #f1f5f9;       /* slate-100 */
+  --color-muted: #94a3b8;    /* slate-400 */
+  --color-surface: #0f172a;  /* slate-900 */
+  --color-border: #1e293b;   /* slate-800 */
+  --color-primary: #22d3ee;  /* cyan-400  */
+}
+
+/* ── Light theme ───────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --color-bg: #f8fafc;       /* slate-50  */
+  --color-fg: #0f172a;       /* slate-900 */
+  --color-muted: #64748b;    /* slate-500 */
+  --color-surface: #ffffff;  /* white     */
+  --color-border: #e2e8f0;   /* slate-200 */
+  --color-primary: #0891b2;  /* cyan-600  — stays legible on white */
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: var(--color-bg);
+  --color-foreground: var(--color-fg);
+  --color-muted: var(--color-muted);
+  --color-primary: var(--color-primary);
+
+  /* Geist fonts (provided by app/layout.js via next/font) */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-geist-sans);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+}
+
+/* Skip-to-content: off-screen until focused, then anchors to top-left of viewport.
+   Only visible to keyboard users (on first Tab press). Mouse users never see it. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 1rem;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  z-index: 9999;
+  padding: 0.5rem 1rem;
+  background: var(--color-primary);
+  color: var(--color-bg);
+  font-weight: 600;
+  border-radius: 0.375rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.skip-link:focus-visible {
+  left: 1rem;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  outline: 2px solid var(--color-bg);
+  outline-offset: 2px;
+}
+
+/* Reusable focus ring — cyan-400 outline matching the existing pattern in NavMenu.
+   Apply .focus-ring to any interactive element that needs consistent focus styling. */
+.focus-ring:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
 }
