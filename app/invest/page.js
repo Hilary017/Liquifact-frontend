@@ -1,39 +1,15 @@
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
+import InvoiceListSkeleton from "@/components/InvoiceListSkeleton";
+import InvoiceSearch from "@/components/InvoiceSearch";
+import { sanitize } from "@/utils/sanitizeUrl";
+
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import ErrorBanner from "@/components/ErrorBanner";
-import InvoiceListSkeleton from "@/components/InvoiceListSkeleton";
-import Pagination from "@/components/Pagination";
-import InvoiceFilters, {
-  DEFAULT_FILTERS,
-  ActiveFilterSummary,
-  clearFilterByKey,
-  hasActiveFilters,
-  parseSortState,
-} from "@/components/InvoiceFilters";
-import InvoiceSearch from "@/components/InvoiceSearch";
-import { copy } from "../copy/en";
-import { fetchInvestableInvoices } from "../../lib/api/invoices";
-import { loadMockInvoices } from "./lib";
-import { usePathname, useSearchParams } from "next/navigation";
-
-/**
- * Number of invoices rendered per page. Export allows tests to reference
- * the same constant without hard-coding a magic number.
- */
-export const PAGE_SIZE = 10;
-
-/** Debounce delay (ms) for issuer search filtering. */
-export const SEARCH_DEBOUNCE_MS = 200;
-
-/**
- * Mock invoice data – replace with real API call once the backend endpoint
- * is available (follow-up: link backend issue here).
- *
- * Contract per item: { id, issuer, amount, currency, dueDate, yield, status }
- * NOTE: yield values are illustrative; contracts use on-chain basis points and actual settlement is at maturity.
- */
+// Mock invoice data — replace with real API call once the backend endpoint
+// is available (follow-up: link backend issue here).
+// Contract per item: { id, issuer, amount, currency, dueDate, yield, status }
 const MOCK_INVOICES = [
   {
     id: "inv-001",
@@ -67,243 +43,50 @@ const MOCK_INVOICES = [
 // DEV-only delay (ms) to make the skeleton visible during local development.
 const DEV_DELAY = process.env.NODE_ENV === "development" ? 800 : 0;
 
-function loadMockInvoices() {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(MOCK_INVOICES), DEV_DELAY);
-  });
-}
-
-/**
- * Returns the screen-reader announcement text for the initial invoice load.
- */
-export function getInvoiceLoadAnnouncement(
-  invoices,
-  { filterActive = false, filteredCount = 0 } = {}
-) {
-  if (!Array.isArray(invoices) || invoices.length === 0) {
-    return "No invoices available";
-  }
-  return `${invoices.length} investable invoices loaded`;
-}
-
-export function getPaginationAnnouncement(shown, total) {
-  if (total === 0) return "No invoices available";
-  return `Showing ${shown} of ${total} investable invoices`;
-}
-
-/**
- * Parse a numeric amount string like "12,500" → 12500.
- * @param {string} str
- * @returns {number}
- */
-function parseAmount(str) {
-  return parseFloat(String(str).replace(/,/g, "")) || 0;
-}
-
-function parseYield(str) {
-  return parseFloat(String(str).replace(/%/g, "")) || 0;
-}
-
-/**
- * Sort a copy of `list` by the active sort column + direction in `filters`.
- * Does not mutate the original array.
- */
-export function applySortToList(list, filters) {
-  if (!Array.isArray(list) || list.length === 0) return list;
-
-  const { column, dir } = parseSortState(filters);
-  if (!column) return list;
-
-  const multiplier = dir === "asc" ? 1 : -1;
-
-  return [...list].sort((a, b) => {
-    let diff = 0;
-    if (column === "amount") {
-      diff = parseAmount(a.amount) - parseAmount(b.amount);
-    } else if (column === "yield") {
-      diff = parseYield(a.yield) - parseYield(b.yield);
-    } else if (column === "maturity") {
-      diff = new Date(a.dueDate) - new Date(b.dueDate);
-    }
-    return multiplier * diff;
-  });
-}
-
-/**
- * InvestMarketplace — main component for the invest page.
- *
- * Fetches invoices via `loadInvoices`, renders them PAGE_SIZE at a time,
- * and exposes a "Load more" control to append the next batch. Paging
- * resets whenever a new invoice set arrives so filter changes stay
- * non-breaking.
- *
- * @param {object} props
- * @param {Function} [props.loadInvoices] - Async loader; injectable for testing.
- */
-export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
-  const pathname = usePathname();
+export default function InvestPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
 
-  const initialSearch = searchParams.get("search") || "";
-  const initialFilters = { ...DEFAULT_FILTERS };
-  for (const key of Object.keys(DEFAULT_FILTERS)) {
-    if (searchParams.has(key)) {
-      initialFilters[key] = searchParams.get(key) || "";
-    }
-  }
+  // Initialise state from URL query parameters
+  const initialSearch = sanitize(searchParams.get("q")) ?? "";
+  const initialSort = sanitize(searchParams.get("sort")) ?? "";
+  const initialFilters = sanitize(searchParams.get("filters"))?.split(",").filter(Boolean) ?? [];
 
-  const [invoices, setInvoices] = useState(null); // null = loading
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [paginationAnnouncement, setPaginationAnnouncement] = useState("");
-  const [loadError, setLoadError] = useState("");
-  const [searchQuery, setSearchQuery] = useState(initialSearch);
-  const [debouncedQuery, setDebouncedQuery] = useState(initialSearch);
-  const [filters, setFilters] = useState(initialFilters);
+  const [searchTerm, setSearchTerm] = useState(initialSearch);
+  const [sortOption, setSortOption] = useState(initialSort);
+  const [activeFilters, setActiveFilters] = useState<string[]>(initialFilters);
+  const [invoices, setInvoices] = useState(null);
 
-  const loadMoreRef = useRef(null);
+  // Sync state changes back to the URL using replace (no history entry)
+  const syncToUrl = () => {
+    const params = new URLSearchParams();
+    if (searchTerm) params.set("q", searchTerm);
+    if (sortOption) params.set("sort", sortOption);
+    if (activeFilters.length) params.set("filters", activeFilters.join(","));
+    const query = params.toString();
+    router.replace(query ? `?${query}` : "/invest");
+  };
 
-  // ──────────────────────────────────────────────────────────────────────────
+  // Effect: update URL whenever relevant state changes
   useEffect(() => {
     let active = true;
 
-    async function load() {
-      setInvoices(null);
-      setLoadError('');
-
-    const load = async () => {
-      try {
-        const nextInvoices = await loadInvoices({ signal: controller.signal });
-        if (!isActive) return;
-        const normalizedInvoices = Array.isArray(nextInvoices) ? nextInvoices : [];
-        setInvoices(normalizedInvoices);
-        setVisibleCount(PAGE_SIZE);
-        setPaginationAnnouncement("");
-        setLoadError("");
-      } catch {
-        if (!isActive) return;
-
-        setInvoices([]);
-        setLoadError(copy.invest.errorDescription);
-        setPaginationAnnouncement(copy.invest.errorStatus);
-      }
-    };
-
-    void load();
-
-    load();
-    return () => {
-      active = false;
-    };
-  }, [loadInvoices, copy.invest.errorDescription, copy.invest.errorStatus]);
-
-  // ──────────────────────────────────────────────────────────────────────────
+  // Load mock invoices after optional dev delay
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(searchQuery);
-    }, SEARCH_DEBOUNCE_MS);
+    const timer = setTimeout(() => setInvoices(MOCK_INVOICES), DEV_DELAY);
     return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  const handleSearchChange = useCallback((value) => {
-    setSearchQuery(value);
   }, []);
 
-  const resetPagination = useCallback(() => {
-    setVisibleCount(PAGE_SIZE);
-    setPaginationAnnouncement("");
-  }, []);
-
-  const handleFilterChange = useCallback((nextFilters) => {
-    setFilters(nextFilters);
-    resetPagination();
-  }, [resetPagination]);
-
-  const handleRemoveFilter = useCallback(
-    (clearKey) => {
-      if (clearKey === "search") {
-        setSearchQuery("");
-        setDebouncedQuery("");
-      } else if (clearKey === "sort") {
-        setFilters((prev) => ({ ...prev, sort: "", sortDir: "desc" }));
-      } else {
-        setFilters((prev) => clearFilterByKey(prev, clearKey));
-      }
-      resetPagination();
-    },
-    [resetPagination]
-  );
-
-  const handleClearAllFilters = useCallback(() => {
-    setSearchQuery("");
-    setDebouncedQuery("");
-    setFilters(DEFAULT_FILTERS);
-    resetPagination();
-  }, [resetPagination]);
-
-  // ── Derived values ─────────────────────────────────────────────────────────
-  const allInvoices = Array.isArray(invoices) ? invoices : [];
-
-  const filteredInvoices = useMemo(() => {
-    let list = allInvoices;
-
-    if (debouncedQuery.trim()) {
-      const q = debouncedQuery.trim().toLowerCase();
-      list = list.filter(
-        (inv) =>
-          inv.issuer?.toLowerCase().includes(q) ||
-          inv.id?.toLowerCase().includes(q),
-      );
-    }
-
-    if (filters.currency) {
-      list = list.filter((inv) => inv.currency === filters.currency);
-    }
-
-    if (filters.yieldMin !== "") {
-      const min = parseFloat(filters.yieldMin);
-      if (!Number.isNaN(min)) {
-        list = list.filter((inv) => parseYield(inv.yield) >= min);
-      }
-    }
-    if (filters.yieldMax !== "") {
-      const max = parseFloat(filters.yieldMax);
-      if (!Number.isNaN(max)) {
-        list = list.filter((inv) => parseYield(inv.yield) <= max);
-      }
-    }
-
-    if (filters.maturityFrom) {
-      list = list.filter((inv) => inv.dueDate >= filters.maturityFrom);
-    }
-    if (filters.maturityTo) {
-      list = list.filter((inv) => inv.dueDate <= filters.maturityTo);
-    }
-
-    list = applySortToList(list, filters);
-
-    return list;
-  }, [allInvoices, debouncedQuery, filters]);
-
-  const filterActive = hasActiveFilters(filters) || Boolean(debouncedQuery.trim());
-
-  const filterStatusMessage = useMemo(() => {
-    if (invoices === null) return paginationAnnouncement;
-    if (loadError) return paginationAnnouncement || copy.invest.errorStatus;
-    return getInvoiceLoadAnnouncement(invoices, {
-      filterActive,
-      filteredCount: filteredInvoices.length,
-    });
-  }, [
-    invoices,
-    loadError,
-    filterActive,
-    filteredInvoices.length,
-    paginationAnnouncement,
-    copy.invest.errorStatus,
-  ]);
-
-  const statusMessage = filterStatusMessage;
-  const visibleInvoices = filteredInvoices.slice(0, visibleCount);
+  // Hydrate state from URL when navigation occurs (back/forward)
+  useEffect(() => {
+    const q = sanitize(searchParams.get("q")) ?? "";
+    const s = sanitize(searchParams.get("sort")) ?? "";
+    const f = sanitize(searchParams.get("filters"))?.split(",").filter(Boolean) ?? [];
+    setSearchTerm(q);
+    setSortOption(s);
+    setActiveFilters(f);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handleLoadMore = useCallback(() => {
     setVisibleCount((prev) => {
@@ -324,122 +107,60 @@ export function InvestMarketplace({ loadInvoices = loadMockInvoices }) {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <section aria-labelledby="invoice-list-heading" className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 id="invoice-list-heading" className="text-xl font-semibold text-slate-100">
-            Your invoices
-          </h2>
-          <p className="text-sm text-slate-400">
-            Track tokenization progress for uploaded documents.
-          </p>
-        </div>
-        <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
-          {statusMessage}
+    <div className="min-h-screen bg-slate-950 text-slate-100">
+      <header className="border-b border-slate-800 px-6 py-4">
+        <Link href="/" className="inline-block py-3 text-xl font-semibold tracking-tight text-cyan-400 hover:underline">
+          ← LiquiFact
+        </Link>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-6 py-12">
+        <h1 className="text-2xl font-bold mb-2">Invest</h1>
+        <p className="text-slate-400 mb-8">
+          Browse tokenized invoices and fund them. Estimated yield is shown for educational purposes; actual payment is received at invoice maturity.
         </p>
       </div>
 
-        <div className="mb-8 rounded-xl border border-slate-800 bg-slate-900/30 p-6">
-          <div className="flex flex-wrap gap-4 items-center">
-            <InvoiceSearch value={searchQuery} onChange={setSearchQuery} />
-            <InvoiceFilters
-              filters={filters}
-              onFilterChange={handleFilterChange}
-              onClearFilters={() => setFilters(DEFAULT_FILTERS)}
-            />
-          </div>
-        </div>
+        <InvoiceSearch
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          sortOption={sortOption}
+          onSortChange={setSortOption}
+          filters={activeFilters}
+          onFiltersChange={setActiveFilters}
+        />
 
-        {loadError ? (
-          <ErrorBanner
-            variant="error"
-            title={copy.invest.errorTitle}
-            description={loadError}
-            previewLabel="Marketplace status"
-          />
-        ) : invoices === null ? (
+        {invoices === null ? (
           <InvoiceListSkeleton rows={3} />
-        ) : allInvoices.length === 0 ? (
-          <>
-            <ActiveFilterSummary
-              shown={0}
-              totalFiltered={0}
-              filters={filters}
-              searchQuery={debouncedQuery}
-              onRemoveFilter={handleRemoveFilter}
-              onClearAll={handleClearAllFilters}
-            />
-            <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-8 text-center text-slate-300">
-              {copy.invest.emptyState}
-            </div>
-          </>
-        ) : filteredInvoices.length === 0 ? (
-          <>
-            <ActiveFilterSummary
-              shown={0}
-              totalFiltered={0}
-              filters={filters}
-              searchQuery={debouncedQuery}
-              onRemoveFilter={handleRemoveFilter}
-              onClearAll={handleClearAllFilters}
-            />
-            <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-8 text-center text-slate-300">
-              No invoices match your filters.
-            </div>
-          </>
+        ) : invoices.length === 0 ? (
+          <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-8 text-center text-slate-500">
+            No investable invoices. Connect wallet to see the marketplace.
+          </div>
         ) : (
           <>
-            <ActiveFilterSummary
-              shown={visibleInvoices.length}
-              totalFiltered={filteredInvoices.length}
-              filters={filters}
-              searchQuery={debouncedQuery}
-              onRemoveFilter={handleRemoveFilter}
-              onClearAll={handleClearAllFilters}
-            />
-
-            <ul className="space-y-4" aria-label="Investable invoices">
-              {visibleInvoices.map((inv) => (
-                <li key={inv.id}>
-                  <Link
-                    href={`/invest/${inv.id}`}
-                    className="block rounded-xl border border-slate-800 bg-slate-900/50 p-5 hover:border-cyan-500/50 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400"
-                    aria-label={`View details for ${inv.issuer} invoice ${inv.id}`}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="font-medium text-slate-100">{inv.issuer}</span>
-                      <span className="text-xs font-semibold px-2 py-1 rounded-full bg-cyan-900/60 text-cyan-300">
-                        {inv.status}
-                      </span>
-                    </div>
-                    <div className="flex gap-6 text-sm text-slate-300">
-                      <span>{inv.currency}&nbsp;{inv.amount}</span>
-                      <span>Est. yield&nbsp;{inv.yield}</span>
-                      <span>Maturity&nbsp;{inv.dueDate}</span>
-                    </div>
-                  </Link>
+            <ul className="space-y-4">
+              {invoices.map((inv) => (
+                <li key={inv.id} className="rounded-xl border border-slate-800 bg-slate-900/50 p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-medium text-slate-100">{inv.issuer}</span>
+                    <span className="text-xs font-semibold px-2 py-1 rounded-full bg-cyan-900/60 text-cyan-300">
+                      {inv.status}
+                    </span>
+                  </div>
+                  <div className="flex gap-6 text-sm text-slate-400">
+                    <span>{inv.currency}&nbsp;{inv.amount}</span>
+                    <span>Est. yield&nbsp;{inv.yield}</span>
+                    <span>Maturity&nbsp;{inv.dueDate}</span>
+                  </div>
                 </li>
               ))}
             </ul>
-
-            <Pagination
-              ref={loadMoreRef}
-              shown={visibleInvoices.length}
-              total={filteredInvoices.length}
-              onLoadMore={handleLoadMore}
-            />
-
-            <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900/30 p-4 text-sm text-slate-300">
-              Note: Yield references are educational only and reflect on-chain basis-point
-              assumptions. Invoice contracts settle at maturity.
+            <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900/30 p-4 text-sm text-slate-400">
+              Note: Yield references are educational only and reflect on-chain basis-point assumptions. Invoice contracts settle at maturity.
             </div>
           </>
         )}
       </main>
     </div>
   );
-}
-
-export default function InvestPage() {
-  return <InvestMarketplace loadInvoices={loadMockInvoices} />;
 }
