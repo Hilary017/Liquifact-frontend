@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom";
-import { act, render, screen, fireEvent, within } from "@testing-library/react";
-import {
+import { act, render, screen, fireEvent } from "@testing-library/react";
+import InvestPage, {
   getInvoiceLoadAnnouncement,
   getPaginationAnnouncement,
   InvestMarketplace,
@@ -159,7 +159,9 @@ describe("InvestMarketplace", () => {
     });
 
     expect(skeleton).toHaveAttribute("aria-busy", "true");
-    expect(screen.getByRole("status")).toHaveTextContent("");
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("");
+    expect(status).toHaveAttribute("aria-live", "polite");
   });
 
   it("announces the loaded invoice count exactly once after the list resolves", async () => {
@@ -322,9 +324,27 @@ describe("InvestMarketplace", () => {
     render(<InvestMarketplace loadInvoices={createDeferredLoader([], 100)} />);
     await flushTimers(100);
 
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "No invoices available",
-    );
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("No invoices available");
+    expect(status).toHaveAttribute("aria-live", "polite");
+    expect(
+      screen.getByText(/No investable invoices\. Connect wallet to see the marketplace\./i),
+    ).toBeInTheDocument();
+  });
+
+  it("coerces a non-array load result to an empty list and announces it as empty", async () => {
+    // The loader resolves to a non-array value (e.g. a malformed API payload).
+    // The effect must coerce this to [] rather than rendering or paginating it.
+    const loadInvoices = createDeferredLoader({ unexpected: "shape" }, 100);
+
+    render(<InvestMarketplace loadInvoices={loadInvoices} />);
+
+    await flushTimers(100);
+
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("No invoices available");
+    expect(status).toHaveAttribute("aria-live", "polite");
+    expect(screen.queryByRole("listitem")).not.toBeInTheDocument();
     expect(
       screen.getByText(/No investable invoices\. Connect wallet to see the marketplace\./i),
     ).toBeInTheDocument();
@@ -341,15 +361,71 @@ describe("InvestMarketplace", () => {
     render(<InvestMarketplace loadInvoices={loadInvoices} />);
     await flushTimers(50);
 
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Unable to load investable invoices.",
-    );
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("Unable to load investable invoices.");
+    expect(status).toHaveAttribute("aria-live", "polite");
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Unable to load investable invoices right now.",
     );
   });
 
-  // ── Pagination ───────────────────────────────────────────────────────────
+  // ── Unmount / abort during a pending load ────────────────────────────────
+  // These tests cover the `isActive` guard inside the fetch effect's closure:
+  // if the component unmounts before the loader settles, the effect's cleanup
+  // flips `isActive` to false so the late resolution/rejection is a no-op
+  // instead of calling setState on an unmounted component.
+
+  it("does not throw or update state when unmounted while the load is still pending (resolve after unmount)", async () => {
+    let resolveLoad;
+    const loadInvoices = jest.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveLoad = resolve;
+        }),
+    );
+    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    const { unmount } = render(<InvestMarketplace loadInvoices={loadInvoices} />);
+
+    expect(() => unmount()).not.toThrow();
+
+    // Resolve the loader only after unmount. If the isActive guard were
+    // missing, this would call setState on an unmounted component.
+    await act(async () => {
+      resolveLoad(makeInvoices(2));
+      await Promise.resolve();
+    });
+
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
+  });
+
+  it("does not throw or update state when unmounted while the load is still pending (reject after unmount)", async () => {
+    let rejectLoad;
+    const loadInvoices = jest.fn(
+      () =>
+        new Promise((_, reject) => {
+          rejectLoad = reject;
+        }),
+    );
+    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    const { unmount } = render(<InvestMarketplace loadInvoices={loadInvoices} />);
+
+    expect(() => unmount()).not.toThrow();
+
+    // Reject the loader only after unmount; the catch branch's isActive
+    // guard must short-circuit before setLoadError/setStatusMessage run.
+    await act(async () => {
+      rejectLoad(new Error("boom after unmount"));
+      await Promise.resolve();
+    });
+
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
+  });
+
+  // ── Pagination tests ─────────────────────────────────────────────────────
 
   it("renders only PAGE_SIZE items initially when total exceeds PAGE_SIZE", async () => {
     render(<InvestMarketplace loadInvoices={createDeferredLoader(makeInvoices(PAGE_SIZE + 5), 50)} />);
@@ -688,8 +764,25 @@ describe("InvestMarketplace", () => {
 // ── Unit tests for pure helpers ────────────────────────────────────────────
 
 describe("getInvoiceLoadAnnouncement", () => {
-  it("returns the expected announcement for loaded and empty states", () => {
+  it("returns 'No invoices available' for non-array input", () => {
+    expect(getInvoiceLoadAnnouncement(undefined)).toBe("No invoices available");
+    expect(getInvoiceLoadAnnouncement(null)).toBe("No invoices available");
+    expect(getInvoiceLoadAnnouncement("not-an-array")).toBe(
+      "No invoices available",
+    );
+    expect(getInvoiceLoadAnnouncement({ length: 3 })).toBe(
+      "No invoices available",
+    );
+  });
+
+  it("returns 'No invoices available' for an empty array", () => {
     expect(getInvoiceLoadAnnouncement([])).toBe("No invoices available");
+  });
+
+  it("returns the exact 'N investable invoices loaded' string for N>0", () => {
+    expect(getInvoiceLoadAnnouncement([{ id: "1" }])).toBe(
+      "1 investable invoices loaded",
+    );
     expect(getInvoiceLoadAnnouncement([{ id: "1" }, { id: "2" }])).toBe(
       "2 investable invoices loaded",
     );
