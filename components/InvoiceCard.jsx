@@ -2,23 +2,17 @@
  * @file components/InvoiceCard.jsx
  * Renders a single invoice row for the Invest marketplace.
  * This is the canonical card markup; InvoiceListSkeleton mirrors its layout.
+ *
+ * Status is rendered via the shared `StatusPill` component so that label,
+ * tone, and a11y metadata stay in one place.  See `lib/types/invoice.js`
+ * and `components/StatusPill.jsx`.
  */
 
 import Link from "next/link";
+import StatusPill from "@/components/StatusPill";
+import { resolveStatusPill } from "@/lib/types/invoice";
 
 /** @typedef {import("@/lib/types/invoice").Invoice} Invoice */
-
-const STATUS_STYLES = {
-  available: "bg-cyan-900/40 text-cyan-300 border border-cyan-700/50",
-  funded: "bg-slate-700/40 text-slate-400 border border-slate-600/50",
-  pending: "bg-amber-900/40 text-amber-300 border border-amber-700/50",
-};
-
-const STATUS_LABELS = {
-  available: "Available",
-  funded: "Funded",
-  pending: "Pending",
-};
 
 /**
  * Formats a date string into a human-readable short date.
@@ -30,19 +24,49 @@ function formatDate(dateStr) {
   if (!dateStr) return "—";
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+  return d.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 /**
  * Formats an amount with its currency code.
- * @param {number|undefined} amount
+ * @param {number|string|undefined} amount
  * @param {string|undefined} currency
  * @returns {string}
  */
 function formatAmount(amount, currency) {
-  if (amount == null) return "—";
-  const formatted = Number(amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (amount == null || amount === "") return "—";
+  const numeric = Number(amount);
+  const formatted = Number.isFinite(numeric)
+    ? numeric.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    : String(amount);
   return currency ? `${formatted} ${currency}` : formatted;
+}
+
+/**
+ * Formats a yield percentage consistently.  Yields may arrive as either a
+ * bare number (`8.5`) or a percent string (`"8.5%"`); always emits a single
+ * trailing `%` so the markup never ends up with `"8.5%%"`.
+ * @param {number|string|undefined} value
+ * @returns {string}
+ */
+function formatYield(value) {
+  if (value == null || value === "") return "—";
+  // Numeric input: format as `<n>%`, but `NaN` / `±Infinity` fall back.
+  // The `Number.isFinite` guard is scoped to the numeric branch so numeric
+  // strings (`"8.5"`, `"8.5%"`) still reach the string handler below —
+  // `Number.isFinite` is strict and returns `false` for non-numbers.
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? `${value}%` : "—";
+  }
+  const str = String(value);
+  return str.includes("%") ? str : `${str}%`;
 }
 
 /**
@@ -50,21 +74,25 @@ function formatAmount(amount, currency) {
  * @param {Invoice} props.invoice
  */
 export default function InvoiceCard({ invoice }) {
-  const { id, issuer, amount, currency, dueDate, yield: yieldPct, status } = invoice ?? {};
+  const { id, issuer, amount, currency, dueDate, yield: yieldPct, status } = invoice ?? {}; // Resolve the canonical pill label once so the link aria-label and the
+  // pill aria-label stay in lock-step (both read from the same source).
+  const { label: statusLabel } = resolveStatusPill(status);
 
-  const statusKey = STATUS_STYLES[status] ? status : "pending";
-  const statusStyle = STATUS_STYLES[statusKey];
-  const statusLabel = STATUS_LABELS[statusKey] ?? status ?? "Unknown";
+  // Compose the link aria-label.  When the canonical status resolves to
+  // "Unknown" (nullish / unrecognised input), drop the trailing " \u2014
+  // <label>" segment so the aria-label does not advertise a misleading
+  // status.  Computed as a small constant so the template literal below
+  // stays readable and avoids any encoding pitfalls around em-dash.
+  const statusSuffix = statusLabel && statusLabel !== "Unknown" ? ` \u2014 ${statusLabel}` : "";
 
   return (
     <Link
       href={`/invest/${id}`}
       className="group block rounded-lg border border-slate-800 bg-slate-900/60 px-5 py-4 transition-colors hover:border-cyan-700/60 hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-      aria-label={`Invoice ${id ?? ""} from ${issuer ?? "unknown issuer"} — ${statusLabel}`}
+      aria-label={`Invoice ${id ?? ""} from ${issuer ?? "unknown issuer"}${statusSuffix}`}
     >
       {/* Row layout: mirrors InvoiceListSkeleton column widths */}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-
         {/* Issuer — w-1/4 min */}
         <div className="min-w-0 flex-1 basis-1/4">
           <p className="truncate font-semibold text-slate-100 group-hover:text-cyan-300 transition-colors">
@@ -81,9 +109,7 @@ export default function InvoiceCard({ invoice }) {
 
         {/* Yield — w-1/6 */}
         <div className="basis-1/6 text-right">
-          <p className="font-mono text-cyan-400">
-            {yieldPct != null ? `${yieldPct}%` : "—"}
-          </p>
+          <p className="font-mono text-cyan-400">{formatYield(yieldPct)}</p>
           <p className="text-xs text-slate-500 mt-0.5">Yield</p>
         </div>
 
@@ -93,17 +119,10 @@ export default function InvoiceCard({ invoice }) {
           <p className="text-xs text-slate-500 mt-0.5">Maturity</p>
         </div>
 
-        {/* Status badge — w-auto */}
+        {/* Status pill — w-auto (rendered via shared <StatusPill>) */}
         <div className="basis-auto">
-          <span
-            className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyle}`}
-            role="status"
-            aria-label={`Status: ${statusLabel}`}
-          >
-            {statusLabel}
-          </span>
+          <StatusPill status={status ?? ""} />
         </div>
-
       </div>
     </Link>
   );

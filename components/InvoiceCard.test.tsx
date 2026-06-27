@@ -2,6 +2,11 @@
  * @file components/InvoiceCard.test.tsx
  * Unit + accessibility tests for the shared InvoiceCard component.
  * Target: ≥ 95% branch coverage for InvoiceCard.jsx
+ *
+ * Status is now delegated to the shared `StatusPill` component.  These
+ * tests intentionally assert only the *wiring* (the badge is rendered,
+ * the link aria-label mentions the status, the TitleCase canonical values
+ * are accepted); per-tone class assertions live in `components/StatusPill.test.tsx`.
  */
 
 import React from "react";
@@ -33,7 +38,7 @@ const BASE_INVOICE = {
   currency: "USDC",
   dueDate: "2025-09-30",
   yield: 8.5,
-  status: "available",
+  status: "Open",
 };
 
 function renderCard(overrides = {}) {
@@ -73,34 +78,58 @@ describe("InvoiceCard — basic rendering", () => {
   });
 
   it("renders a status badge with the correct label", () => {
-    renderCard({ status: "available" });
-    expect(screen.getByRole("status", { hidden: true })).toHaveTextContent("Available");
+    renderCard({ status: "Open" });
+    expect(screen.getByRole("status", { hidden: true })).toHaveTextContent("Open");
   });
 
   it("links to the invoice detail page", () => {
     renderCard({ id: "INV-042" });
     expect(screen.getByRole("link")).toHaveAttribute("href", "/invest/INV-042");
   });
+
+  it("renders percent-string yields without a duplicated % suffix", () => {
+    renderCard({ yield: "8.5%" });
+    expect(screen.getByText("8.5%")).toBeInTheDocument();
+  });
+
+  it("renders numeric yields with a trailing %", () => {
+    renderCard({ yield: 8.5 });
+    expect(screen.getByText("8.5%")).toBeInTheDocument();
+  });
 });
 
 // ---------------------------------------------------------------------------
-// Status variants
+// Status variants — canonical TitleCase values
 // ---------------------------------------------------------------------------
 
 describe("InvoiceCard — status variants", () => {
   it.each([
-    ["available", "Available"],
-    ["funded", "Funded"],
-    ["pending", "Pending"],
+    ["Open", "Open"],
+    ["Funded", "Funded"],
+    ["Settled", "Settled"],
+    ["Overdue", "Overdue by maturity"],
   ])("renders status '%s' as '%s'", (status, label) => {
     renderCard({ status });
     expect(screen.getByRole("status", { hidden: true })).toHaveTextContent(label);
   });
 
-  it("falls back to pending styling for unknown status values", () => {
+  it("falls back to a neutral 'Unknown' pill for unrecognised status values", () => {
     renderCard({ status: "unknown-value" });
-    // Should not throw and should still render a badge
-    expect(screen.getByRole("status", { hidden: true })).toBeInTheDocument();
+    const badge = screen.getByRole("status", { hidden: true });
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveTextContent("Unknown");
+    expect(badge).toHaveAttribute("data-status", "Unknown");
+  });
+
+  it("falls back to 'Unknown' when status is null", () => {
+    renderCard({ status: null as any });
+    expect(screen.getByRole("status", { hidden: true })).toHaveTextContent("Unknown");
+  });
+
+  it("falls back to 'Unknown' when status is undefined", () => {
+    const { status, ...rest } = BASE_INVOICE;
+    render(<InvoiceCard invoice={rest as any} />);
+    expect(screen.getByRole("status", { hidden: true })).toHaveTextContent("Unknown");
   });
 });
 
@@ -114,8 +143,17 @@ describe("InvoiceCard — missing optional fields", () => {
     expect(screen.getByText("—")).toBeInTheDocument();
   });
 
+  it("renders em-dash when amount is null", () => {
+    renderCard({ amount: null as any });
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
+
+  it("renders the raw string when amount is a non-numeric string", () => {
+    renderCard({ amount: "12,500" });
+    expect(screen.getByText(/12,500/)).toBeInTheDocument();
+  });
+
   it("renders em-dash when dueDate is missing", () => {
-    // amount is set so only dueDate produces '—'
     renderCard({ dueDate: undefined });
     const dashes = screen.getAllByText("—");
     expect(dashes.length).toBeGreaterThanOrEqual(1);
@@ -132,15 +170,16 @@ describe("InvoiceCard — missing optional fields", () => {
     expect(screen.getByText(/unknown issuer/i)).toBeInTheDocument();
   });
 
-  it("handles null amount gracefully", () => {
-    renderCard({ amount: null as any });
-    expect(screen.getByText("—")).toBeInTheDocument();
-  });
-
   it("handles an invalid date string without throwing", () => {
     renderCard({ dueDate: "not-a-date" });
-    // Should render the raw string as fallback
     expect(screen.getByText("not-a-date")).toBeInTheDocument();
+  });
+
+  it("renders the entire row when invoice is null (uses fallback branches)", () => {
+    // InvoiceCard tolerates a nullish invoice via `invoice ?? {}` and renders
+    // a row of em-dashes / "Unknown issuer" / "Unknown" status.
+    expect(() => render(<InvoiceCard invoice={null as any} />)).not.toThrow();
+    expect(screen.getByText(/unknown issuer/i)).toBeInTheDocument();
   });
 });
 
@@ -153,7 +192,6 @@ describe("InvoiceCard — long issuer names", () => {
     const longName = "A".repeat(120);
     renderCard({ issuer: longName });
     expect(screen.getByText(longName)).toBeInTheDocument();
-    // The containing element should have a truncate class
     expect(screen.getByText(longName)).toHaveClass("truncate");
   });
 });
@@ -185,13 +223,47 @@ describe("InvoiceCard — accessibility", () => {
     const link = screen.getByRole("link");
     expect(link).toHaveAttribute("aria-label");
     expect(link.getAttribute("aria-label")).toMatch(/acme corp/i);
-    expect(link.getAttribute("aria-label")).toMatch(/available/i);
+    expect(link.getAttribute("aria-label")).toMatch(/open/i);
   });
 
-  it("status badge has role='status' and an aria-label", () => {
-    renderCard({ status: "funded" });
+  it("status badge has role='status' and an aria-label naming the state", () => {
+    renderCard({ status: "Funded" });
     const badge = screen.getByRole("status", { hidden: true });
     expect(badge).toHaveAttribute("aria-label", "Status: Funded");
+  });
+
+  it("status badge carries data-status='Funded' (canonical, not label-text)", () => {
+    renderCard({ status: "Funded" });
+    const badge = screen.getByRole("status", { hidden: true });
+    expect(badge).toHaveAttribute("data-status", "Funded");
+  });
+
+  it("link aria-label does NOT include the 'Unknown' trailer when status is nullish", () => {
+    // Regression guard for the conditional statusSuffix: nullish status
+    // must result in an aria-label of the form
+    // "Invoice <id> from <issuer>" — NOT "... \u2014 Unknown".
+    renderCard({ status: null as any });
+    const link = screen.getByRole("link");
+    const aria = link.getAttribute("aria-label") ?? "";
+    expect(aria).toMatch(/acme corp/i);
+    expect(aria).not.toMatch(/unknown/i);
+    expect(aria).not.toMatch(/\u2014/);
+  });
+
+  it("link aria-label does NOT include the 'Unknown' trailer for an unrecognised status", () => {
+    renderCard({ status: "garbage" as any });
+    const link = screen.getByRole("link");
+    const aria = link.getAttribute("aria-label") ?? "";
+    expect(aria).not.toMatch(/unknown/i);
+    expect(aria).not.toMatch(/\u2014/);
+  });
+
+  it("link aria-label DOES include the canonical status (with the em-dash trailer)", () => {
+    renderCard({ status: "Settled" });
+    const link = screen.getByRole("link");
+    const aria = link.getAttribute("aria-label") ?? "";
+    expect(aria).toMatch(/settled/i);
+    expect(aria).toMatch(/\u2014 settled/i);
   });
 });
 
@@ -202,6 +274,11 @@ describe("InvoiceCard — accessibility", () => {
 describe("InvoiceCard — snapshot", () => {
   it("matches snapshot for a complete invoice", () => {
     const { asFragment } = renderCard();
+    expect(asFragment()).toMatchSnapshot();
+  });
+
+  it("matches snapshot when status falls back to Unknown", () => {
+    const { asFragment } = renderCard({ status: "garbage" as any });
     expect(asFragment()).toMatchSnapshot();
   });
 });
