@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { copy } from "../app/copy/en";
-import { isPdfMagicValid } from "../lib/validation/pdf";
+import { isPdfMagicValid, validatePdfFile, sanitizeFilename } from "../lib/validation/pdf";
 
 // Base URL for backend API; sourced from env (defaults to empty string for tests)
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
@@ -108,6 +108,9 @@ function UploadZone({ onUploadSuccess, progress }) {
       const sizeMb = (f.size / 1024 / 1024).toFixed(1);
       return `File is ${sizeMb} MB — exceeds the ${FILE_CONSTRAINTS.maxSizeMb} MB limit.`;
     }
+    if (f.size === 0) {
+      return "File is empty (0 bytes). Please select a valid PDF file.";
+    }
     return null;
   }
 
@@ -122,11 +125,11 @@ function UploadZone({ onUploadSuccess, progress }) {
     // Optimistically set the file and clear any previous error.
     setFile(f);
     setError(null);
-    // Magic byte validation (async). If it fails, clear the file and show error.
+    // Comprehensive PDF validation (async). If it fails, clear the file and show error.
     try {
-      const isValid = await isPdfMagicValid(f);
-      if (isValid === false) {
-        setError("The selected file does not appear to be a valid PDF.");
+      const validation = await validatePdfFile(f);
+      if (!validation.valid) {
+        setError(validation.reason || "The selected file does not appear to be a valid PDF.");
         setFile(null);
       }
     } catch (e) {
@@ -175,8 +178,8 @@ function UploadZone({ onUploadSuccess, progress }) {
       setStatus("success");
       if (typeof onUploadSuccess === "function") {
         onUploadSuccess({
-          id: `upload-${Date.now()}-${file.name}`,
-          issuer: file.name,
+          id: `upload-${Date.now()}-${sanitizeFilename(file.name)}`,
+          issuer: sanitizeFilename(file.name),
           amount: "Pending",
           currency: "USD",
           dueDate: "Pending",
@@ -242,7 +245,10 @@ function UploadZone({ onUploadSuccess, progress }) {
             <span className="text-3xl" aria-hidden="true">
               {"\u2705"}
             </span>
-            <p className="font-medium text-emerald-400">{file.name}</p>
+            <p 
+              className="font-medium text-emerald-400" 
+              dangerouslySetInnerHTML={{ __html: sanitizeFilename(file.name) }}
+            />
             <p className="text-xs text-slate-500">
               {(file.size / 1024 / 1024).toFixed(2)} MB {"\u00B7"} PDF
             </p>
@@ -359,4 +365,4 @@ function UploadZone({ onUploadSuccess, progress }) {
 }
 
 export default UploadZone;
-export { FILE_CONSTRAINTS, MAX_UPLOAD_BYTES, Spinner };
+export { FILE_CONSTRAINTS, Spinner };

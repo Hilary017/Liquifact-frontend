@@ -88,6 +88,25 @@ The Invest page (`app/invest/page.js`) includes an issuer search field above the
 
 If the marketplace fails to load invoices, an `ErrorBanner` is rendered with a **"Try again"** action. Clicking it resets the component to the loading skeleton, cancels any stale in-flight request via `AbortController`, and re-invokes `loadInvoices`. The polite `aria-live` status region is cleared on retry and re-announced once the new load settles.
 
+### File Upload Security
+
+The invoice upload system (`components/UploadZone.jsx`) implements comprehensive security validation for PDF files:
+
+- **Magic byte validation**: Verifies files start with `%PDF-` magic bytes to prevent MIME type spoofing
+- **Zero-byte rejection**: Blocks empty files (0 bytes) to prevent processing invalid files
+- **Extension validation**: Ensures file extension matches `.pdf` (case-insensitive)
+- **Content-extension mismatch detection**: Rejects files where the extension doesn't match the actual content
+- **Filename sanitization**: Escapes HTML special characters in filenames to prevent XSS attacks
+- **Filename length capping**: Truncates displayed filenames to 50 characters to prevent layout abuse
+
+All validation is performed client-side using the `lib/validation/pdf.js` helper functions:
+
+- `isPdfMagicValid(file)` - Checks PDF magic bytes
+- `validatePdfFile(file)` - Comprehensive validation including size, extension, and content
+- `sanitizeFilename(filename, maxLength)` - Sanitizes and truncates filenames for safe display
+
+The validation never executes or trusts file content - it only inspects the file's bytes and metadata.
+
 ---
 
 ## Project structure
@@ -109,7 +128,11 @@ liquifact-frontend/
 │           └── not-found.js # Unknown invoice fallback
 ├── components/
 │   ├── WalletStatus.jsx    # Wallet connection UI
-│   └── WalletProvider.jsx  # Single source of truth for shared wallet state
+│   ├── WalletProvider.jsx  # Single source of truth for shared wallet state
+│   └── UploadZone.jsx      # Invoice upload with security validation
+├── lib/
+│   └── validation/
+│       └── pdf.js          # PDF validation helpers (magic bytes, sanitization)
 ├── public/
 ├── .env.local.example
 ├── eslint.config.mjs

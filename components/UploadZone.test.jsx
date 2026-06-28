@@ -3,10 +3,10 @@ import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
 import { axe, toHaveNoViolations } from "jest-axe";
 import UploadZone, { FILE_CONSTRAINTS } from "./UploadZone";
 import { copy } from "../app/copy/en";
-import { isPdfMagicValid } from "../lib/validation/pdf";
+import { validatePdfFile } from "../lib/validation/pdf";
 
 jest.mock("../lib/validation/pdf", () => ({
-  isPdfMagicValid: jest.fn(),
+  validatePdfFile: jest.fn(),
 }));
 
 expect.extend(toHaveNoViolations);
@@ -65,6 +65,11 @@ afterEach(() => {
 });
 
 describe("UploadZone", () => {
+  beforeEach(() => {
+    // Default mock for successful PDF validation
+    validatePdfFile.mockResolvedValue({ valid: true });
+  });
+
   it("renders constraint notice and drop zone in idle state", () => {
     render(<UploadZone />);
 
@@ -106,13 +111,58 @@ describe("UploadZone", () => {
     expect(screen.getByRole("button", { name: /upload & tokenize invoice/i })).toBeDisabled();
   });
   it("rejects file with correct MIME but invalid PDF magic bytes", async () => {
-    // Mock the magic validation to return false
-    isPdfMagicValid.mockResolvedValueOnce(false);
+    // Mock the validation to return invalid
+    validatePdfFile.mockResolvedValueOnce({ valid: false, reason: "File content does not match PDF format" });
     render(<UploadZone />);
     const file = createMockFile("fake.pdf", "application/pdf");
     const input = screen.getByLabelText(/select pdf invoice file/i);
     fireEvent.change(input, { target: { files: [file] } });
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/valid pdf/i));
+  });
+
+  it("rejects zero-byte files", async () => {
+    render(<UploadZone />);
+    const emptyFile = new File([], "empty.pdf", { type: "application/pdf" });
+    const input = screen.getByLabelText(/select pdf invoice file/i);
+    fireEvent.change(input, { target: { files: [emptyFile] } });
+    expect(screen.getByRole("alert")).toHaveTextContent(/empty/i);
+    expect(screen.getByRole("button", { name: /upload & tokenize invoice/i })).toBeDisabled();
+  });
+
+  it("rejects files with non-PDF extension", async () => {
+    validatePdfFile.mockResolvedValueOnce({ valid: false, reason: "File extension does not match .pdf" });
+    render(<UploadZone />);
+    const file = createMockFile("document.txt", "application/pdf");
+    const input = screen.getByLabelText(/select pdf invoice file/i);
+    fireEvent.change(input, { target: { files: [file] } });
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/extension/i));
+  });
+
+  it("sanitizes filenames with HTML special characters", async () => {
+    validatePdfFile.mockResolvedValueOnce({ valid: true });
+    render(<UploadZone />);
+    const maliciousFile = new File(['%PDF-1.4'], '<script>alert("xss")</script>.pdf', { type: "application/pdf" });
+    const input = screen.getByLabelText(/select pdf invoice file/i);
+    fireEvent.change(input, { target: { files: [maliciousFile] } });
+    await waitFor(() => {
+      const filenameElement = screen.getByText(/&lt;script&gt;/);
+      expect(filenameElement).toBeInTheDocument();
+      expect(filenameElement.innerHTML).not.toContain('<script>');
+    });
+  });
+
+  it("truncates long filenames in display", async () => {
+    validatePdfFile.mockResolvedValueOnce({ valid: true });
+    render(<UploadZone />);
+    const longName = 'a'.repeat(100) + '.pdf';
+    const longFile = new File(['%PDF-1.4'], longName, { type: "application/pdf" });
+    const input = screen.getByLabelText(/select pdf invoice file/i);
+    fireEvent.change(input, { target: { files: [longFile] } });
+    await waitFor(() => {
+      const displayedText = screen.getByText(/\.\.\.$/);
+      expect(displayedText).toBeInTheDocument();
+      expect(displayedText.textContent.length).toBeLessThanOrEqual(50);
+    });
   });
 
   it("progresses through uploading, tokenizing, and success on submit", async () => {
