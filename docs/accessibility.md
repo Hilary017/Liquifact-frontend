@@ -7,10 +7,41 @@ LiquiFact Frontend is committed to meeting **WCAG 2.1 AA** accessibility sta
 ## Keyboard & Screen‑Reader Patterns
 
 - **Focus Management** – Interactive elements receive a visible focus ring (`outline: 2px solid var(--color-primary)`); focus order follows logical DOM structure. The mobile `NavMenu` disclosure moves focus to the first revealed menu link on open and returns focus to the toggle button on close.
-- **ARIA Live Regions** – Used in `components/UploadZone.jsx`, `components/WalletStatus.jsx`, and `app/invest/page.js` to announce status updates to assistive technologies.
+- **ARIA Live Regions** – Used in `components/UploadZone.jsx`, `components/WalletStatus.jsx`, `components/Pagination.jsx` (page mode), and `app/invest/page.js` to announce status updates to assistive technologies.
 - **Landmarks** – Page layouts employ semantic HTML landmarks (`<header>`, `<main>`, `<nav>`, `<footer>`) for easy navigation.
 - **Form Labels** – All form controls include associated `<label>` elements or `aria-label` attributes.
 - **Button Roles** – Buttons are native `<button>` elements; where custom elements are used, `role="button"` and keyboard handlers are added.
+
+### Pagination Announcements (issue #276)
+
+`components/Pagination.jsx` announces page position to screen readers when the caller
+supplies the `page`, `totalPages`, and `pageSize` props (page-based mode).
+
+**Announcement format:**
+
+```
+Page X of Y, showing items A–B
+```
+
+**Implementation details:**
+
+- A single `role="status" aria-live="polite" aria-atomic="true"` region is rendered
+  inside the component and kept visually hidden (`sr-only`).
+- The region is populated only when the `page` prop changes — initial render is skipped
+  using a `useRef` guard so screen readers do not hear an announcement on first mount.
+- The region is **only rendered in page mode** (when `page` and `totalPages` are
+  provided). In load-more mode the region is absent entirely, preventing any conflict with
+  the marketplace list announcer in `app/invest/page.js`.
+
+**Coordination with the marketplace list announcer:**
+
+`app/invest/page.js` owns its own `role="status" aria-live="polite"` region that
+announces load results, filter counts, and load-more updates.  The `Pagination`
+component is used there in load-more mode (no `page` prop), so its announcement region
+is not rendered and the two live regions never compete or produce duplicate output.
+
+Callers that adopt page-based mode should ensure they do not additionally wrap
+`Pagination` in another live region for the same paging event.
 
 ## Automated Accessibility Tests (CI)
 
@@ -87,4 +118,4 @@ When adding or modifying UI:
 
 ---
 
-_Last updated: 2026‑06‑24_
+_Last updated: 2026‑06‑28_
