@@ -68,10 +68,15 @@ docs/api-integration.md
 
 ### Environment variables
 
-| Variable                      | Required | Default                 | Used by                                                          |
-| ----------------------------- | -------- | ----------------------- | ---------------------------------------------------------------- |
-| `NEXT_PUBLIC_API_URL`         | No       | `http://localhost:3001` | [app/page.js](app/page.js)                                       |
-| `NEXT_PUBLIC_STELLAR_NETWORK` | No       | Unset                   | [WALLET_INTEGRATION_CONTRACT.md](WALLET_INTEGRATION_CONTRACT.md) |
+For the full reference — purpose, defaults, required-vs-optional, and consuming module for every variable — see **[docs/configuration.md](docs/configuration.md)**.
+
+Quick summary:
+
+| Variable | Required | Default | Used by |
+|---|---|---|---|
+| `NEXT_PUBLIC_API_URL` | No | `http://localhost:3001` | `lib/api/invoices.js`, `app/page.js` |
+| `NEXT_PUBLIC_SITE_URL` | No | `http://localhost:3000` | `app/layout.js`, `app/sitemap.js`, `app/robots.js` |
+| `NEXT_PUBLIC_STELLAR_NETWORK` | No | *(unset)* | `lib/wallet/freighter.js` |
 
 `NEXT_PUBLIC_*` values are inlined by Next.js at **build time** and shipped to the browser. **Never store secrets here.**
 
