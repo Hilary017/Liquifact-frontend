@@ -25,6 +25,54 @@ function formatYield(value) {
   return formattedYield === INVALID_VALUE_FALLBACK ? formattedYield : `${formattedYield}%`;
 }
 
+function sanitizeText(value) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  const text = String(value).trim();
+
+  return text.replace(/[<>{}"']/g, "");
+}
+
+function buildInvoiceJsonLd(invoice) {
+  if (!invoice) {
+    return null;
+  }
+
+  const issuer = sanitizeText(invoice.issuer);
+  const amount = sanitizeText(invoice.amount);
+  const currency = sanitizeText(invoice.currency);
+  const dueDate = sanitizeText(invoice.dueDate);
+  const yieldValue = sanitizeText(invoice.yield);
+  const status = sanitizeText(invoice.status);
+  const descriptionParts = [
+    issuer ? `Invoice offering from ${issuer}` : "Invoice offering",
+    amount ? `Amount ${amount}` : null,
+    currency ? `Currency ${currency}` : null,
+    dueDate ? `Maturity ${dueDate}` : null,
+    yieldValue ? `Estimated yield ${yieldValue}` : null,
+    status ? `Status ${status}` : null,
+  ].filter(Boolean);
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Offer",
+    name: issuer ? `Invoice offering from ${issuer}` : "Invoice offering",
+    description: descriptionParts.join(". "),
+    seller: issuer
+      ? {
+          "@type": "Organization",
+          name: issuer,
+        }
+      : undefined,
+    price: amount || undefined,
+    priceCurrency: currency || undefined,
+    availability: status === "Open" ? "https://schema.org/InStock" : undefined,
+    validFrom: dueDate || undefined,
+  };
+}
+
 export function InvoiceDetail({ loadInvoice = loadInvoiceById }) {
   const params = useParams();
   const id = params?.id;
@@ -81,6 +129,7 @@ export function InvoiceDetail({ loadInvoice = loadInvoiceById }) {
 
   const isFundingDisabled =
     walletState === WALLET_STATES.CONNECTING || walletState === WALLET_STATES.NO_WALLET;
+  const invoiceJsonLd = buildInvoiceJsonLd(invoice);
 
   const handlePrint = () => {
     window.print();
@@ -99,6 +148,12 @@ export function InvoiceDetail({ loadInvoice = loadInvoiceById }) {
       </header>
 
       <main className="max-w-4xl mx-auto px-6 py-12">
+        {invoiceJsonLd ? (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(invoiceJsonLd) }}
+          />
+        ) : null}
         <Link
           href="/invest"
           className="no-print inline-block mb-6 text-sm text-slate-400 hover:text-cyan-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400 rounded"
