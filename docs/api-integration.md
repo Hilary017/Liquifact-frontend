@@ -144,6 +144,21 @@ The canonical invoice object used in the frontend UI requires the following shap
 
 _Note: The frontend currently renders the `amount` and `yield` as strings, but a robust API integration should ideally provide these as numbers (e.g. `amount: 12500`, `yield: 8.2`) leaving formatting to the frontend presentation layer. For now, strings are shown based on the current mocked state._
 
+### Normalization Contract
+
+`fetchInvestableInvoices` (`lib/api/invoices.js`) is the single boundary that
+maps a raw backend payload onto the canonical shape above. Its guarantees,
+pinned by `lib/api/invoices.test.ts`:
+
+- **Every field is always present.** Each missing field — and every field of a
+  `null`/non-object entry — is defaulted to `null`.
+- **Only contract fields survive.** Unknown extra keys in the raw payload are
+  dropped, so malformed payloads cannot inject unexpected fields downstream.
+- **`yield` is mapped through verbatim** to the UI `yield` field.
+- **Error paths throw documented messages:** `Failed to fetch invoices: …` (not
+  OK), `Response is not valid JSON` (bad body), and `Invoice payload is not an
+  array` (non-array body).
+
 ---
 
 ## Planned Backend Endpoints
