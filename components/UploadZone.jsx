@@ -3,9 +3,10 @@
 import { useRef, useState } from "react";
 import { copy } from "../app/copy/en";
 import { isPdfMagicValid } from "../lib/validation/pdf";
+import { env } from "../lib/config/env";
 
-// Base URL for backend API; sourced from env (defaults to empty string for tests)
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+// Base URL for backend API; validated and centralized in lib/config/env.
+const API_URL = env.apiUrl;
 
 const FILE_CONSTRAINTS = {
   accept: ".pdf",
@@ -13,6 +14,8 @@ const FILE_CONSTRAINTS = {
   maxSizeMb: 10,
   maxSizeBytes: 10 * 1024 * 1024,
 };
+
+const MAX_UPLOAD_BYTES = FILE_CONSTRAINTS.maxSizeBytes;
 
 function ConstraintBadge({ icon, label }) {
   return (

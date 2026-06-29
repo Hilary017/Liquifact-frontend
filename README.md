@@ -68,11 +68,19 @@ docs/api-integration.md
 
 #### Build-time validation
 
-All `NEXT_PUBLIC_*` variables are validated by [`lib/config/env.js`](lib/config/env.js) when the module is first imported. If any variable is set to an invalid value (e.g. a malformed URL or an unsupported `STELLAR_NETWORK` value), the build fails immediately with a message listing every problem:
+All `NEXT_PUBLIC_*` variables are validated by [`lib/config/env.js`](lib/config/env.js) when the module is first imported, and the resulting config object is **frozen** so it cannot be mutated at runtime. Consumers (`app/page.js`, `lib/api/invoices.js`, `components/UploadZone.jsx`, `components/WalletProvider.jsx`) read the validated value instead of `process.env` directly.
+
+Validation rules:
+
+- **`NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_SITE_URL`** — must parse via `new URL(...)` **and** use an `http:` or `https:` scheme. Disallowed schemes (`javascript:`, `data:`, `file:`, `ftp:`, …) are rejected so a hostile value can never flow into a `fetch()` URL or CSP origin.
+- **`NEXT_PUBLIC_STELLAR_NETWORK`** — optional; when set it must be one of `testnet` or `public`. An empty string is treated as unset.
+
+If any variable is invalid, the build fails immediately with a message listing every problem:
 
 ```
 [env] Environment misconfiguration — fix before deploying:
   • NEXT_PUBLIC_API_URL: "not-a-url" is not a valid URL
+  • NEXT_PUBLIC_API_URL: "javascript:alert(1)" uses a disallowed scheme "javascript:" — only http/https are permitted
   • NEXT_PUBLIC_STELLAR_NETWORK: "mainnet" must be one of [testnet, public]
 ```
 

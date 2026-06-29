@@ -11,6 +11,7 @@ import {
 } from "react";
 import { ToastContext } from "./ToastProvider";
 import { isFreighterConnected, connectFreighter, getFreighterNetwork } from "../lib/wallet/freighter";
+import { loadEnv } from "../lib/config/env";
 
 /**
  * Read the toast API when available. Returns null when WalletProvider is
@@ -226,7 +227,7 @@ export function WalletProvider({ children }) {
 
       const address = await connectFreighter();
       const network = await getFreighterNetwork();
-      const expectedNetwork = process.env.NEXT_PUBLIC_STELLAR_NETWORK || 'testnet';
+      const expectedNetwork = loadEnv().stellarNetwork || 'testnet';
 
       if (network !== expectedNetwork.toLowerCase()) {
         setState(WALLET_STATES.WRONG_NETWORK);

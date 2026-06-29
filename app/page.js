@@ -5,8 +5,9 @@ import Link from "next/link";
 import NavMenu from "../components/NavMenu";
 import { copy } from "./copy/en";
 import { getHealth } from "../lib/api/health";
+import { env } from "../lib/config/env";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_URL = env.apiUrl;
 
 // Status mapping to visual states
 // Maps getHealth return values to badge styles and labels
