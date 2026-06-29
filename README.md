@@ -38,6 +38,15 @@ Part of the LiquiFact stack: **frontend** (this repo) | **backend** (Express API
 
 ---
 
+## Architecture
+
+New to the codebase? Start with the
+[Frontend Architecture & Data Flow guide](docs/architecture.md) — it maps the
+App Router routes (and their loading/error files), the mock-vs-live data layers,
+and where wallet/toast/theme state lives.
+
+---
+
 ## API Integration
 
 For frontend/backend contract details see:
