@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom";
 import { render, screen, fireEvent } from "@testing-library/react";
-import InvoiceFilters, { DEFAULT_FILTERS, hasActiveFilters } from "./InvoiceFilters";
+import InvoiceFilters, { DEFAULT_FILTERS, hasActiveFilters, StatusLegendFilter } from "./InvoiceFilters";
 
 describe("DEFAULT_FILTERS", () => {
   it("has the expected shape with empty values", () => {
@@ -11,6 +11,8 @@ describe("DEFAULT_FILTERS", () => {
       maturityFrom: "",
       maturityTo: "",
       sort: "",
+      sortDir: "desc",
+      statuses: [],
     });
   });
 });
@@ -279,5 +281,113 @@ describe("InvoiceFilters", () => {
     expect(screen.getByLabelText("Filter by GBP")).toBeInTheDocument();
     expect(screen.getByLabelText("Filter by JPY")).toBeInTheDocument();
     expect(screen.getByLabelText("Filter by CHF")).toBeInTheDocument();
+  });
+});
+
+describe("StatusLegendFilter", () => {
+  it("renders a chip for each canonical status", () => {
+    render(
+      <StatusLegendFilter
+        selectedStatuses={[]}
+        onStatusToggle={() => {}}
+        onClearStatuses={() => {}}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "Open" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Funded" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Settled" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Overdue" })).toBeInTheDocument();
+  });
+
+  it("marks no chip as pressed when selectedStatuses is empty", () => {
+    render(
+      <StatusLegendFilter
+        selectedStatuses={[]}
+        onStatusToggle={() => {}}
+        onClearStatuses={() => {}}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "Open" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Funded" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Settled" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Overdue" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("marks a selected status chip as aria-pressed=true", () => {
+    render(
+      <StatusLegendFilter
+        selectedStatuses={["Open", "Overdue"]}
+        onStatusToggle={() => {}}
+        onClearStatuses={() => {}}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "Open" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Overdue" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Funded" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Settled" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("calls onStatusToggle with the clicked status", () => {
+    const handleToggle = jest.fn();
+    render(
+      <StatusLegendFilter
+        selectedStatuses={[]}
+        onStatusToggle={handleToggle}
+        onClearStatuses={() => {}}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Funded" }));
+
+    expect(handleToggle).toHaveBeenCalledWith("Funded");
+    expect(handleToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a Clear button only when statuses are selected", () => {
+    const { rerender } = render(
+      <StatusLegendFilter
+        selectedStatuses={[]}
+        onStatusToggle={() => {}}
+        onClearStatuses={() => {}}
+      />
+    );
+
+    expect(screen.queryByLabelText("Clear status filters")).not.toBeInTheDocument();
+
+    rerender(
+      <StatusLegendFilter
+        selectedStatuses={["Open"]}
+        onStatusToggle={() => {}}
+        onClearStatuses={() => {}}
+      />
+    );
+
+    expect(screen.getByLabelText("Clear status filters")).toBeInTheDocument();
+  });
+
+  it("calls onClearStatuses when the Clear button is clicked", () => {
+    const handleClear = jest.fn();
+    render(
+      <StatusLegendFilter
+        selectedStatuses={["Settled"]}
+        onStatusToggle={() => {}}
+        onClearStatuses={handleClear}
+      />
+    );
+
+    fireEvent.click(screen.getByLabelText("Clear status filters"));
+
+    expect(handleClear).toHaveBeenCalledTimes(1);
+  });
+
+  it("hasActiveFilters returns true when statuses array is non-empty", () => {
+    expect(hasActiveFilters({ ...DEFAULT_FILTERS, statuses: ["Open"] })).toBe(true);
+  });
+
+  it("hasActiveFilters returns false when statuses array is empty", () => {
+    expect(hasActiveFilters({ ...DEFAULT_FILTERS, statuses: [] })).toBe(false);
   });
 });

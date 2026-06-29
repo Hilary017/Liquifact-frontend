@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { INVOICE_STATUSES, STATUS_PILL_MAP } from "@/lib/types/invoice";
 
 export const DEFAULT_FILTERS = {
   yieldMin: "",
@@ -10,6 +11,8 @@ export const DEFAULT_FILTERS = {
   maturityTo: "",
   sort: "",
   sortDir: "desc",
+  /** @type {string[]} Active status filter values (empty = show all). */
+  statuses: [],
 };
 
 /**
@@ -56,7 +59,8 @@ export function hasActiveFilters(filters) {
     filters.currency !== "" ||
     filters.maturityFrom !== "" ||
     filters.maturityTo !== "" ||
-    filters.sort !== ""
+    filters.sort !== "" ||
+    (Array.isArray(filters.statuses) && filters.statuses.length > 0)
   );
 }
 
@@ -239,6 +243,66 @@ function DirectionToggle({ column, filters, onFilterChange }) {
     >
       {isActive && dir === "asc" ? "↑" : "↓"}
     </button>
+  );
+}
+
+/**
+ * A compact, toggleable chip row that lets investors filter the invoice list
+ * by one or more statuses.  The chip set is derived from `INVOICE_STATUSES`
+ * so it always stays in sync with the canonical status vocabulary.
+ *
+ * Each chip is a real `<button>` with `aria-pressed` for keyboard and
+ * screen-reader accessibility. Multiple selections are combined with a union
+ * (OR) — when the active set is empty, all invoices are shown.
+ *
+ * @param {object}   props
+ * @param {string[]} props.selectedStatuses - Currently active status filters.
+ * @param {Function} props.onStatusToggle   - Called with the toggled status string.
+ * @param {Function} [props.onClearStatuses] - Called when "Clear" is clicked.
+ */
+export function StatusLegendFilter({ selectedStatuses = [], onStatusToggle, onClearStatuses }) {
+  const statusValues = Object.values(INVOICE_STATUSES);
+  const hasSelection = selectedStatuses.length > 0;
+
+  return (
+    <div className="mb-4">
+      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by status">
+        <span className="text-xs font-medium text-slate-400 mr-1">Status:</span>
+        {statusValues.map((status) => {
+          const isPressed = selectedStatuses.includes(status);
+          const pillMeta = STATUS_PILL_MAP[status] ?? STATUS_PILL_MAP.Unknown;
+          return (
+            <button
+              key={status}
+              type="button"
+              aria-pressed={isPressed}
+              onClick={() => onStatusToggle(status)}
+              className={[
+                "inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-all",
+                "border focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-950",
+                isPressed
+                  ? `${pillMeta.tone} border-transparent opacity-100`
+                  : "border-slate-700 bg-slate-800/50 text-slate-400 opacity-70 hover:opacity-100 hover:border-slate-500",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              {status}
+            </button>
+          );
+        })}
+        {hasSelection && (
+          <button
+            type="button"
+            onClick={onClearStatuses}
+            className="rounded-lg border border-slate-700 bg-slate-800/50 px-2 py-1 text-xs text-cyan-400 transition-colors hover:bg-slate-700/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+            aria-label="Clear status filters"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
