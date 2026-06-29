@@ -10,6 +10,7 @@ This document outlines the contract for implementing actual Stellar wallet integ
 
 - ✅ UI state machine with 6 connection states
 - ✅ Accessibility features (ARIA labels, screen reader support)
+- ✅ Polite live region for wallet state-transition announcements (see below)
 - ✅ Responsive design
 - ✅ Helper text and error messaging
 - ✅ Visual status indicators
@@ -95,6 +96,29 @@ Target wallets for integration:
 - `walletData` - Connected wallet information (balance is runtime-only, not persisted)
 - `connect()` - Initiate connection (returns `{ outcome, message? }`)
 - `disconnect()` - Terminate connection and clear persisted snapshot
+
+### Polite Live Region
+
+`WalletStatus` renders a visually-hidden `role="status" aria-live="polite"` element
+(`data-testid="wallet-live-region"`) that announces wallet state transitions once to
+screen readers without interrupting ongoing speech.
+
+**Announcement strings (by state):**
+
+| State | Announcement |
+|---|---|
+| `connected` | "Wallet connected." |
+| `disconnected` | "Wallet disconnected." |
+| `error` | "Wallet connection failed." |
+| `wrong_network` | "Wallet connected to wrong network." |
+| `no_wallet` | "No wallet detected." |
+| `connecting` | *(no announcement — spinner is visible)* |
+
+**Design decisions:**
+- Announcements fire only when `rawState` changes; re-renders with the same state are silent.
+- The `connecting` state is omitted because the button already renders a visible loading indicator.
+- No public key or error detail is ever included in the announcement to avoid leaking sensitive data.
+- The previous text is cleared before setting the new one so the same message re-announces if the user connects/disconnects repeatedly.
 
 ### Error Banner Lifecycle
 
