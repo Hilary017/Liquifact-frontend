@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 // in the initial JS bundle. The placeholder prevents CLS while the chunk
 // downloads. ssr: false avoids "window is not defined" during server render.
 import WalletStatusLazy from "./WalletStatusLazy";
+import NetworkBadge from "./NetworkBadge";
 
 /**
  * @typedef {Object} NavLink
@@ -141,11 +142,15 @@ export default function NavMenu() {
               {label}
             </Link>
           ))}
+          {/* Stellar network badge — tells users which ledger is configured */}
+          <NetworkBadge />
           {/* Lazy-loaded wallet UI — chunk fetched on demand, not in initial bundle */}
           <WalletStatusLazy />
         </nav>
 
         <div className="flex items-center gap-3">
+          {/* Network badge — visible on mobile too, alongside the wallet button */}
+          <NetworkBadge className="md:hidden" />
           {/* Wallet button — lazy-loaded on mobile too */}
           <div className="md:hidden">
             <WalletStatusLazy />

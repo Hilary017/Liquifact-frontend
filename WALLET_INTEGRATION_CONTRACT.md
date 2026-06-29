@@ -15,6 +15,25 @@ This document outlines the contract for implementing actual Stellar wallet integ
 - ✅ Visual status indicators
 - ✅ Persistent inline error banner for ERROR/WRONG_NETWORK states
 - ✅ Actual wallet connection logic (Freighter)
+- ✅ Header network badge reflecting the configured environment
+
+## Network Badge
+
+A small badge in the app header (`components/NetworkBadge.jsx`, rendered by
+`components/NavMenu.jsx` alongside the wallet status) tells investors which
+Stellar ledger the app is configured against. It reads the configured network
+from `lib/config/env.js` (`env.stellarNetwork`, sourced from
+`NEXT_PUBLIC_STELLAR_NETWORK`) and maps it to a labelled badge:
+
+| `NEXT_PUBLIC_STELLAR_NETWORK` | Badge label       | Treatment                              |
+| ----------------------------- | ----------------- | -------------------------------------- |
+| `public`                      | `Mainnet`         | neutral/green, no warning marker       |
+| `testnet`                     | `Testnet`         | amber + dotted ring + `!` marker       |
+| unset / unknown               | `Unknown network` | slate + dotted ring + `!` marker       |
+
+Accessibility: the network is conveyed by a **text label** (never colour
+alone), mirrored in `aria-label`, and non-mainnet networks carry an extra
+non-colour `!` marker so testnet is unmistakable.
 
 ## Wallet States
 
