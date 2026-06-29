@@ -192,7 +192,7 @@ export default function WalletStatus() {
         return {
           buttonText: copy.wallet.switchNetworkButton,
           buttonVariant: "warning",
-          helperText: copy.wallet.helperWrongNetwork,
+          helperText: error || copy.wallet.helperWrongNetwork,
           disabled: false,
           showAddress: false,
         };

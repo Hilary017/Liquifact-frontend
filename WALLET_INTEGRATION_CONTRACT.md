@@ -66,9 +66,33 @@ const walletData = {
 
 ### 4. Network Verification
 
-- Check if connected wallet is on correct network (public mainnet)
-- Update `WRONG_NETWORK` state if on testnet
-- Provide network switching guidance
+The configured expected network is read from `NEXT_PUBLIC_STELLAR_NETWORK` (default: `testnet`). Three helpers in `lib/wallet/freighter.js` encapsulate all network comparison logic:
+
+| Export | Returns | Use case |
+|---|---|---|
+| `getFreighterNetwork()` | `Promise<string \| null>` | Read active network; `null` when unreadable |
+| `isExpectedNetwork()` | `Promise<boolean>` | Non-throwing check (e.g. conditional rendering) |
+| `assertExpectedNetwork()` | `Promise<void>` | Hard gate before funding/transaction flows |
+
+**Important:** `getFreighterNetwork()` returns `null` on any error rather than defaulting to `'public'`. This ensures an unreadable network is always treated as a mismatch and never silently clears a WRONG_NETWORK condition.
+
+`assertExpectedNetwork()` throws a typed `WrongNetworkError` (exported from the same module) that carries `.actual` and `.expected` fields, making it easy to surface a human-readable message:
+
+```javascript
+import { assertExpectedNetwork, WrongNetworkError } from "@/lib/wallet/freighter";
+
+try {
+  await assertExpectedNetwork();
+  // safe to submit transaction
+} catch (err) {
+  if (err instanceof WrongNetworkError) {
+    // err.message: 'Wallet is on "public" but the app requires "testnet"'
+    // Show WRONG_NETWORK banner — never proceed to a funding call.
+  }
+}
+```
+
+`WalletProvider` calls `assertExpectedNetwork()` during the connect flow and transitions to `WRONG_NETWORK` when it throws, propagating the error message to `WalletStatus` for display.
 
 ### 5. Error Handling
 
@@ -147,8 +171,8 @@ Use global state for:
 ## Security Considerations
 
 - Validate Stellar addresses
-- Verify network before transactions
-- Secure storage of connection state
+- **Always call `assertExpectedNetwork()` before submitting any transaction or funding request.** The function throws `WrongNetworkError` when Freighter is on an unexpected ledger, including when the network cannot be read at all (treated as a mismatch, not a pass).
+- Secure storage of connection state (truncated address + network only — never balances or keys)
 - Handle wallet disconnection gracefully
 
 ## Testing Requirements
