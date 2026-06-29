@@ -190,7 +190,7 @@ export default function ThemeToggle({ className = "" }) {
         "rounded-lg p-2 transition-colors",
         "text-slate-300 hover:text-cyan-400 hover:bg-slate-800",
         "dark:text-slate-300 dark:hover:text-cyan-400",
-        "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400",
+        "focus-ring",
         className,
       ]
         .filter(Boolean)

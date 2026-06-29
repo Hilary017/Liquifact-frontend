@@ -6,11 +6,34 @@ LiquiFact Frontend is committed to meeting **WCAG 2.1 AA** accessibility sta
 
 ## Keyboard & Screen‑Reader Patterns
 
-- **Focus Management** – Interactive elements receive a visible focus ring (`outline: 2px solid var(--color-primary)`); focus order follows logical DOM structure. The mobile `NavMenu` disclosure moves focus to the first revealed menu link on open and returns focus to the toggle button on close.
+- **Focus Management** – Interactive elements receive a visible focus ring via the `.focus-ring` CSS class (`outline: 2px solid var(--color-focus-ring)`, offset 2px). Focus order follows logical DOM structure. The mobile `NavMenu` disclosure moves focus to the first revealed menu link on open and returns focus to the toggle button on close.
 - **ARIA Live Regions** – Used in `components/UploadZone.jsx`, `components/WalletStatus.jsx`, `components/Pagination.jsx` (page mode), and `app/invest/page.js` to announce status updates to assistive technologies.
 - **Landmarks** – Page layouts employ semantic HTML landmarks (`<header>`, `<main>`, `<nav>`, `<footer>`) for easy navigation.
 - **Form Labels** – All form controls include associated `<label>` elements or `aria-label` attributes.
 - **Button Roles** – Buttons are native `<button>` elements; where custom elements are used, `role="button"` and keyboard handlers are added.
+
+### Focus‑Ring Audit
+
+A comprehensive focus‑ring audit was performed across all interactive components to ensure
+a consistent, high‑contrast focus indicator.
+
+**Token:** `--color-focus-ring` — defined in `app/globals.css` for both themes:
+  - Dark  (slate‑950 bg): `#22d3ee` (cyan‑400) → ~10:1 contrast
+  - Light (slate‑50 bg):   `#0891b2` (cyan‑600) → ~3.5:1 contrast
+
+**Utility class:** `.focus-ring:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 2px; }`
+
+**Audited components:**
+  - `Button` (all variants: primary, secondary, warning, external, danger)
+  - `NavMenu` (brand link, desktop nav links, hamburger toggle, mobile menu links)
+  - `ThemeToggle`
+  - `InvoiceList` (copy‑address button, empty‑state CTA)
+  - `UploadZone` (submit button)
+
+**Automated checks:**
+  - Class‑presence test in `components/focus-ring.a11y.test.tsx`
+  - WCAG AA contrast verification in `app/globals.contrast-ratio.test.tsx`
+  - Keyboard traversal test (Tab order) using `@testing-library/user-event`
 
 ### Pagination Announcements (issue #276)
 
@@ -89,11 +112,14 @@ Callers that adopt page-based mode should ensure they do not additionally wrap
 
 ## Known Limitations
 
-| Area         | Issue                                                                   | Reference                             |
-| ------------ | ----------------------------------------------------------------------- | ------------------------------------- |
-| Filters      | "Soon" filter buttons are disabled and lack focus styles.               | `app/invoices/page.js` (TODO comment) |
-| Motion       | Reduced‑motion handling is not yet implemented for animated components. | `components/ToastProvider.jsx`        |
-| Focus Styles | Some custom SVG icons do not inherit focus outline.                     | `components/WalletStatus.jsx`         |
+| Area          | Issue                                                                           | Reference                              |
+| ------------- | ------------------------------------------------------------------------------- | -------------------------------------- |
+| Filters       | "Soon" filter buttons are disabled and lack focus styles.                       | `app/invoices/page.js` (TODO comment)  |
+| Motion        | Reduced‑motion handling is not yet implemented for animated components.         | `components/ToastProvider.jsx`         |
+| Focus Ring    | `InvoiceFilters` date inputs use `focus:border-cyan-500` instead of `.focus-ring`. | `components/InvoiceFilters.jsx`     |
+| Focus Ring    | `InvoiceSearch` uses `focus:ring-2` instead of `.focus-ring`.                   | `components/InvoiceSearch.jsx`         |
+| Focus Ring    | `InvoiceCard` and `Pagination` use `focus-visible:ring-2` instead of `.focus-ring`. | `components/InvoiceCard.jsx`, `Pagination.jsx` |
+| Focus Ring    | `WalletStatus` SVG icons may not inherit the focus ring on all interactive elements. | `components/WalletStatus.jsx`       |
 
 We are actively tracking these items in the repository’s issue tracker and will resolve them in upcoming releases.
 
@@ -103,11 +129,13 @@ When adding or modifying UI:
 
 - [ ] Use semantic HTML elements and appropriate ARIA attributes.
 - [ ] Ensure every interactive element has a visible focus style.
-- [ ] Verify colour contrast meets **AA** ratios (4.5:1 text, 3:1 large text).
+- [ ] Add the `.focus-ring` CSS class to any new interactive element (button, link, input, toggle) for consistent focus-visible styling.
+- [ ] Verify colour contrast meets **AA** ratios (4.5:1 text, 3:1 large text, 3:1 UI / focus indicator).
 - [ ] Add `role="status"` or `aria-live="polite"` for dynamic feedback.
 - [ ] Test keyboard navigation (Tab, Shift+Tab, Enter, Space) across the component.
 - [ ] Prefer semantic key/value structures (e.g. `<dl>/<dt>/<dd>`) for assistive-technology friendly “label + value” facts.
 - [ ] Run `npm run test:accessibility` locally and fix any violations.
+- [ ] Run `npm test` — the focus‑ring audit suite (`focus-ring.a11y.test.tsx`) asserts that new interactive elements carry the `.focus-ring` class.
 - [ ] Document any known accessibility gaps in this statement.
 
 

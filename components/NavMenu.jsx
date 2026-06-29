@@ -120,7 +120,7 @@ export default function NavMenu() {
         {/* Brand */}
         <Link
           href="/"
-          className="md:text-2xl text-xl font-semibold tracking-tight text-slate-100 hover:text-cyan-400 active:text-cyan-300 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400 rounded"
+          className="md:text-2xl text-xl font-semibold tracking-tight text-slate-100 hover:text-cyan-400 active:text-cyan-300 transition-colors focus-ring rounded"
         >
           LiquiFact
         </Link>
@@ -132,7 +132,7 @@ export default function NavMenu() {
               key={href}
               href={href}
               aria-current={pathname === href ? "page" : undefined}
-              className={`text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400 rounded ${
+              className={`text-sm font-medium transition-colors focus-ring rounded ${
                 pathname === href
                   ? "text-cyan-400"
                   : "text-slate-300 hover:text-cyan-400 active:text-cyan-300"
@@ -159,7 +159,7 @@ export default function NavMenu() {
             aria-controls="mobile-menu"
             aria-label={open ? "Close navigation menu" : "Open navigation menu"}
             onClick={toggle}
-            className="md:hidden rounded-lg p-2 text-slate-300 hover:text-cyan-400 hover:bg-slate-800 active:text-cyan-300 active:bg-slate-700 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400"
+            className="md:hidden rounded-lg p-2 text-slate-300 hover:text-cyan-400 hover:bg-slate-800 active:text-cyan-300 active:bg-slate-700 transition-colors focus-ring"
           >
             {/* Animated hamburger → X morphing in place */}
             <svg
@@ -229,7 +229,7 @@ export default function NavMenu() {
               key={href}
               href={href}
               aria-current={pathname === href ? "page" : undefined}
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400 ${
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-ring ${
                 pathname === href
                   ? "text-cyan-400 bg-slate-800/60"
                   : "text-slate-300 hover:text-cyan-400 hover:bg-slate-800/40 active:text-cyan-300 active:bg-slate-800/50"

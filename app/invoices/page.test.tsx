@@ -36,7 +36,7 @@ describe("InvoicesPage", () => {
 
     expect(navigation).toBeInTheDocument();
     expect(homeLink).toHaveAttribute("href", "/");
-    expect(homeLink.className).toMatch(/focus-visible:outline/);
+    expect(homeLink.className).toMatch(/focus-ring/);
     expect(screen.getByRole("link", { name: /^invoices$/i })).toHaveAttribute("href", "/invoices");
     expect(screen.getByRole("link", { name: /^invest$/i })).toHaveAttribute("href", "/invest");
   });

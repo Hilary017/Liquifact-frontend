@@ -97,7 +97,7 @@ function AddressCopyButton({ address }) {
         onClick={handleCopy}
         aria-label={copied ? "Copied!" : `Copy issuer address ${display}`}
         title={copied ? "Copied!" : "Copy issuer address"}
-        className="inline-flex h-5 w-5 items-center justify-center rounded text-slate-500 hover:text-slate-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-cyan-400 transition-colors"
+        className="inline-flex h-5 w-5 items-center justify-center rounded text-slate-500 hover:text-slate-300 focus-ring transition-colors"
       >
         {copied ? (
           <svg
@@ -260,7 +260,7 @@ export default function InvoiceList({
           action={
             <a
               href="#invoice-upload-btn"
-              className="inline-flex items-center gap-2 rounded-xl border border-cyan-700 bg-cyan-900/30 px-5 py-2.5 text-sm font-semibold text-cyan-300 transition-colors hover:bg-cyan-800/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400"
+              className="inline-flex items-center gap-2 rounded-xl border border-cyan-700 bg-cyan-900/30 px-5 py-2.5 text-sm font-semibold text-cyan-300 transition-colors hover:bg-cyan-800/40 focus-ring"
             >
               Upload your first invoice
             </a>
