@@ -94,3 +94,49 @@ body {
   outline-offset: 2px;
   border-radius: 0.25rem;
 }
+
+/* ── Print stylesheet ──────────────────────────────────────────────────────── */
+/*
+   Renders the invoice detail page as a clean, ink-friendly document.
+   - Hides interactive chrome: nav header, wallet button, back link, fund button,
+     disclaimer note, and the on-screen print button.
+   - Forces a white background and dark text to save ink.
+   - Marks elements with .no-print to opt out of the printed output.
+*/
+@media print {
+  /* Switch to a light, ink-friendly palette */
+  html,
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  /* Hide interactive/navigation chrome */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Ensure invoice summary section prints with visible borders */
+  .print-invoice-section {
+    border: 1px solid #cbd5e1 !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+  }
+
+  /* Definition list terms and values */
+  .print-invoice-section dt {
+    color: #64748b !important;
+  }
+
+  .print-invoice-section dd {
+    color: #0f172a !important;
+  }
+
+  /* Remove decorative backgrounds from the page wrapper */
+  .print-page-wrapper {
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+}

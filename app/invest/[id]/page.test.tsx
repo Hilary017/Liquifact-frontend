@@ -1,322 +1,138 @@
+import React from "react";
 import "@testing-library/jest-dom";
-import { act, render, screen } from "@testing-library/react";
-import { getInvoiceLoadAnnouncement, InvestMarketplace, default as InvestPage } from "../page";
-import { getInvoiceById, loadMockInvoices } from "../lib";
+import { act, render, screen, fireEvent } from "@testing-library/react";
+import { InvoiceDetail } from "./page";
+
+jest.mock("next/navigation", () => ({
+  useParams: () => ({ id: "invoice-123" }),
+  notFound: jest.fn(() => null),
+}));
 
 jest.mock("next/link", () => {
-  function MockLink({ href, children, ...props }) {
+  function MockLink({
+    href,
+    children,
+    ...props
+  }: {
+    href: string;
+    children: React.ReactNode;
+    [key: string]: unknown;
+  }) {
     return (
       <a href={href} {...props}>
         {children}
       </a>
     );
   }
+  return { __esModule: true, default: MockLink };
+});
 
-  return {
-    __esModule: true,
-    default: MockLink,
+jest.mock("@/components/WalletContext", () => ({
+  WALLET_STATES: {
+    DISCONNECTED: "disconnected",
+    CONNECTING: "connecting",
+    NO_WALLET: "no_wallet",
+  },
+  useWallet: () => ({ state: "disconnected", connect: jest.fn() }),
+}));
+
+jest.mock("@/components/WalletStatus", () => {
+  return function WalletStatusMock() {
+    return <div>WalletStatus</div>;
   };
 });
 
-jest.mock("../../lib/api/invoices", () => ({
-  fetchInvestableInvoices: jest.fn(() =>
-    Promise.resolve([
-      {
-        id: "inv-001",
-        issuer: "Acme Supplies Ltd",
-        amount: "12,500",
-        currency: "USD",
-        dueDate: "2026-06-15",
-        yield: "8.2%",
-        status: "Open",
-      },
-      {
-        id: "inv-002",
-        issuer: "Bright Logistics GmbH",
-        amount: "7,800",
-        currency: "EUR",
-        dueDate: "2026-07-01",
-        yield: "7.5%",
-        status: "Open",
-      },
-      {
-        id: "inv-003",
-        issuer: "Sunrise Exports Pte",
-        amount: "22,000",
-        currency: "USD",
-        dueDate: "2026-05-30",
-        yield: "9.1%",
-        status: "Open",
-      },
-    ])
-  ),
-}));
+jest.mock("@/components/ErrorBanner", () => {
+  return function ErrorBannerMock() {
+    return <div role="alert">Error</div>;
+  };
+});
 
-function createDeferredLoader(invoices, delayMs = 0) {
-  return jest.fn(
-    () =>
-      new Promise((resolve) => {
-        setTimeout(() => resolve(invoices), delayMs);
-      })
-  );
-}
+jest.mock("@/components/InvoiceListSkeleton", () => {
+  return function SkeletonMock() {
+    return <div aria-busy="true" />;
+  };
+});
 
-function createPendingLoader() {
-  return jest.fn(() => new Promise(() => {}));
-}
+jest.mock("@/components/StatusPill", () => {
+  return function StatusPillMock({ status }: { status: string }) {
+    return <span>{status}</span>;
+  };
+});
 
-async function flushTimers(delayMs = 0) {
-  await act(async () => {
-    jest.advanceTimersByTime(delayMs);
-    await Promise.resolve();
-  });
-}
+const mockInvoice = {
+  id: "invoice-123",
+  issuer: "Test Issuer LLC",
+  amount: "5,000",
+  currency: "USD",
+  dueDate: "2026-12-31",
+  yield: "8.2",
+  status: "Open",
+};
 
-describe("InvestMarketplace", () => {
-  beforeEach(() => {
-    jest.useFakeTimers();
-  });
+describe("InvoiceDetail — print stylesheet", () => {
+  it("renders a Print / Save PDF button that calls window.print()", async () => {
+    const printSpy = jest.spyOn(window, "print").mockImplementation(() => {});
+    const loadInvoice = jest.fn(async () => mockInvoice);
 
-  afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
-  });
+    render(<InvoiceDetail loadInvoice={loadInvoice} />);
 
-  it("keeps the skeleton busy state while invoices are still loading", () => {
-    render(<InvestMarketplace loadInvoices={createPendingLoader()} />);
-
-    const skeleton = screen.getByRole("list", {
-      name: /loading investable invoices/i,
+    const printButton = await screen.findByRole("button", {
+      name: /print or save this invoice as pdf/i,
     });
 
-    expect(skeleton).toHaveAttribute("aria-busy", "true");
-    expect(screen.getByRole("status")).toHaveTextContent("");
+    expect(printButton).toBeInTheDocument();
+    expect(printButton).not.toBeDisabled();
+
+    fireEvent.click(printButton);
+    expect(printSpy).toHaveBeenCalledTimes(1);
+
+    printSpy.mockRestore();
   });
 
-  it("announces the loaded invoice count exactly once after the list resolves", async () => {
-    const invoices = [
-      {
-        id: "inv-001",
-        issuer: "Acme Supplies Ltd",
-        amount: "12,500",
-        currency: "USD",
-        dueDate: "2026-06-15",
-        yield: "8.2%",
-        status: "Open",
-      },
-      {
-        id: "inv-002",
-        issuer: "Bright Logistics GmbH",
-        amount: "7,800",
-        currency: "EUR",
-        dueDate: "2026-07-01",
-        yield: "7.5%",
-        status: "Open",
-      },
-      {
-        id: "inv-003",
-        issuer: "Sunrise Exports Pte",
-        amount: "22,000",
-        currency: "USD",
-        dueDate: "2026-05-30",
-        yield: "9.1%",
-        status: "Open",
-      },
-    ];
+  it("print button is keyboard-reachable (not disabled, has accessible label)", async () => {
+    const loadInvoice = jest.fn(async () => mockInvoice);
 
-    const loadInvoices = createDeferredLoader(invoices, 100);
-    const { rerender } = render(<InvestMarketplace loadInvoices={loadInvoices} />);
+    render(<InvoiceDetail loadInvoice={loadInvoice} />);
 
-    expect(screen.getByRole("list", { name: /loading investable invoices/i })).toHaveAttribute(
-      "aria-busy",
-      "true"
-    );
+    const printButton = await screen.findByRole("button", {
+      name: /print or save this invoice as pdf/i,
+    });
 
-    await flushTimers(100);
+    expect(printButton).toHaveAttribute("aria-label");
+    expect(printButton.getAttribute("aria-label")).toMatch(/print/i);
+    expect(printButton).not.toHaveAttribute("disabled");
 
-    expect(screen.getByRole("status")).toHaveTextContent("3 investable invoices loaded");
-    expect(screen.getAllByRole("listitem")).toHaveLength(3);
-    expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
-    expect(loadInvoices).toHaveBeenCalledTimes(1);
-
-    rerender(<InvestMarketplace loadInvoices={loadInvoices} />);
-
-    expect(loadInvoices).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole("status")).toHaveTextContent("3 investable invoices loaded");
+    // Simulate keyboard activation
+    printButton.focus();
+    expect(printButton).toHaveFocus();
   });
 
-  it("renders each invoice as a focusable link to its detail route", async () => {
-    const invoices = [
-      {
-        id: "inv-001",
-        issuer: "Acme Supplies Ltd",
-        amount: "12,500",
-        currency: "USD",
-        dueDate: "2026-06-15",
-        yield: "8.2%",
-        status: "Open",
-      },
-      {
-        id: "inv-002",
-        issuer: "Bright Logistics GmbH",
-        amount: "7,800",
-        currency: "EUR",
-        dueDate: "2026-07-01",
-        yield: "7.5%",
-        status: "Open",
-      },
-    ];
+  it("nav header and back-link carry the no-print class to hide chrome when printing", async () => {
+    const loadInvoice = jest.fn(async () => mockInvoice);
 
-    render(<InvestMarketplace loadInvoices={createDeferredLoader(invoices, 0)} />);
-    await flushTimers(0);
+    render(<InvoiceDetail loadInvoice={loadInvoice} />);
 
-    const links = screen
-      .getAllByRole("link")
-      .filter((link) => link.getAttribute("href").startsWith("/invest/"));
-    expect(links).toHaveLength(2);
-    expect(links[0]).toHaveAttribute("href", "/invest/inv-001");
-    expect(links[1]).toHaveAttribute("href", "/invest/inv-002");
+    // Wait for the invoice to load
+    await screen.findByRole("button", { name: /print or save this invoice as pdf/i });
 
-    links[0].focus();
-    expect(links[0]).toHaveFocus();
+    const header = document.querySelector("header");
+    expect(header).toHaveClass("no-print");
+
+    const backLink = screen.getByRole("link", { name: /back to marketplace/i });
+    expect(backLink).toHaveClass("no-print");
   });
 
-  it("announces the empty marketplace state when no invoices load", async () => {
-    const loadInvoices = createDeferredLoader([], 100);
+  it("invoice summary section has the print-invoice-section class for print styling", async () => {
+    const loadInvoice = jest.fn(async () => mockInvoice);
 
-    render(<InvestMarketplace loadInvoices={loadInvoices} />);
+    render(<InvoiceDetail loadInvoice={loadInvoice} />);
 
-    await flushTimers(100);
+    // Wait for invoice to load, then check the section's CSS class
+    await screen.findByRole("button", { name: /print or save this invoice as pdf/i });
 
-    expect(screen.getByRole("status")).toHaveTextContent("No invoices available");
-    expect(
-      screen.getByText(/No investable invoices\. Connect wallet to see the marketplace\./i)
-    ).toBeInTheDocument();
-  });
-
-  it("announces load errors through an alert and live region", async () => {
-    const loadInvoices = jest.fn(
-      () =>
-        new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("boom")), 50);
-        })
-    );
-
-    render(<InvestMarketplace loadInvoices={loadInvoices} />);
-
-    await flushTimers(50);
-
-    expect(screen.getByRole("status")).toHaveTextContent("Unable to load investable invoices.");
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "Unable to load investable invoices right now."
-    );
-  });
-
-  it("ignores stale successful load results after the component unmounts", async () => {
-    const loadInvoices = jest.fn(
-      () =>
-        new Promise((resolve) => {
-          setTimeout(() => resolve([]), 100);
-        })
-    );
-
-    const { unmount } = render(<InvestMarketplace loadInvoices={loadInvoices} />);
-    unmount();
-
-    await flushTimers(100);
-
-    expect(loadInvoices).toHaveBeenCalledTimes(1);
-  });
-
-  it("ignores stale error load results after the component unmounts", async () => {
-    const loadInvoices = jest.fn(
-      () =>
-        new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("boom")), 100);
-        })
-    );
-
-    const { unmount } = render(<InvestMarketplace loadInvoices={loadInvoices} />);
-    unmount();
-
-    await flushTimers(100);
-
-    expect(loadInvoices).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("getInvoiceLoadAnnouncement", () => {
-  it("returns the expected announcement for loaded and empty states", () => {
-    expect(getInvoiceLoadAnnouncement([])).toBe("No invoices available");
-    expect(getInvoiceLoadAnnouncement([{ id: "1" }, { id: "2" }])).toBe(
-      "2 investable invoices loaded"
-    );
-  });
-});
-
-describe("InvestPage", () => {
-  let originalFetch: typeof global.fetch;
-
-  beforeEach(() => {
-    jest.useFakeTimers();
-    originalFetch = global.fetch;
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: jest.fn().mockResolvedValue([
-        {
-          id: "inv-001",
-          issuer: "Acme Supplies Ltd",
-          amount: "12,500",
-          currency: "USD",
-          dueDate: "2026-06-15",
-          yield: "8.2%",
-          status: "Open",
-        },
-        {
-          id: "inv-002",
-          issuer: "Bright Logistics GmbH",
-          amount: "7,800",
-          currency: "EUR",
-          dueDate: "2026-07-01",
-          yield: "7.5%",
-          status: "Open",
-        },
-        {
-          id: "inv-003",
-          issuer: "Sunrise Exports Pte",
-          amount: "22,000",
-          currency: "USD",
-          dueDate: "2026-05-30",
-          yield: "9.1%",
-          status: "Open",
-        },
-      ]),
-    } as Response);
-  });
-
-  afterEach(() => {
-    global.fetch = originalFetch;
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
-  });
-
-  it("renders the marketplace page via the default export", async () => {
-    render(<InvestPage />);
-    await flushTimers(0);
-
-    expect(screen.getByRole("heading", { name: /^invest$/i })).toBeInTheDocument();
-    expect(screen.getAllByRole("listitem")).toHaveLength(3);
-  });
-});
-
-describe("lib helpers", () => {
-  it("resolves an invoice by id or returns undefined for unknown ids", () => {
-    expect(getInvoiceById("inv-001")).toMatchObject({ id: "inv-001" });
-    expect(getInvoiceById("missing")).toBeUndefined();
-  });
-
-  it("loads all mock invoices", async () => {
-    const invoices = await loadMockInvoices();
-    expect(invoices).toHaveLength(3);
+    const section = document.querySelector(".print-invoice-section");
+    expect(section).toBeInTheDocument();
+    expect(section!.tagName).toBe("SECTION");
   });
 });

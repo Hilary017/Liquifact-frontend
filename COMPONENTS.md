@@ -772,3 +772,36 @@ Global tokens defined in `app/globals.css` and driven by the `[data-theme]` attr
 Dark is the `:root` default (backwards-compatible). Light overrides activate via `[data-theme="light"]`.
 
 Font: **Geist** via `next/font/google`. Headings use `font-bold`; body copy uses the default weight.
+
+---
+
+## Print behavior — Invoice Detail page
+
+**File:** `app/invest/[id]/page.js`
+
+The invoice detail page (`/invest/[id]`) supports printing and PDF export via a `@media print` block in `app/globals.css`.
+
+### How it works
+
+- A **"Print / Save PDF"** button appears below the Fund button on the detail page. Clicking it calls `window.print()`, which triggers the browser's native print/save-as-PDF dialog.
+- The button has `aria-label="Print or save this invoice as PDF"` and is keyboard-reachable.
+- Interactive chrome (nav header, wallet widget, back link, Fund button, disclaimer note, and the print button itself) all carry the `no-print` CSS class, which the print stylesheet hides with `display: none !important`.
+- The invoice summary `<section>` carries the `print-invoice-section` class, which forces a white background and dark text for ink-efficient output.
+
+### CSS classes
+
+| Class                   | Purpose                                                    |
+| ----------------------- | ---------------------------------------------------------- |
+| `no-print`              | Hides element in `@media print` (nav, buttons, disclaimer) |
+| `print-invoice-section` | Forces white bg and dark text on the invoice facts panel   |
+| `print-page-wrapper`    | Resets page-level dark background to white when printing   |
+
+### Printed fields
+
+The printed / PDF output shows only the invoice's core fields:
+
+- Issuer
+- Amount (with currency)
+- Estimated yield
+- Maturity date
+- Status
