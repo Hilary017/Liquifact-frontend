@@ -1,16 +1,21 @@
 "use client";
 
+import Button from "@/components/Button";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import ErrorBanner from "@/components/ErrorBanner";
 import InvoiceListSkeleton from "@/components/InvoiceListSkeleton";
+import StatusPill from "@/components/StatusPill";
 import WalletStatus from "@/components/WalletStatus";
 import { useWallet, WALLET_STATES } from "@/components/WalletContext";
-import { copy } from "../../copy/en";
+import {
+  INVALID_VALUE_FALLBACK,
+  formatAmount,
+  formatCurrency,
+} from "@/lib/format/currency";
 import { getInvoiceById } from "../lib";
 
-// DEV-only delay (ms) to make the skeleton visible during local development.
 const DEV_DELAY = process.env.NODE_ENV === "development" ? 800 : 0;
 
 function loadInvoiceById(id) {
@@ -19,12 +24,19 @@ function loadInvoiceById(id) {
   });
 }
 
+function formatYield(value) {
+  const formattedYield = formatAmount(value);
+  return formattedYield === INVALID_VALUE_FALLBACK
+    ? formattedYield
+    : `${formattedYield}%`;
+}
+
 export function InvoiceDetail({ loadInvoice = loadInvoiceById }) {
   const params = useParams();
   const id = params?.id;
-  const [invoice, setInvoice] = useState(null); // null = loading
+  const [invoice, setInvoice] = useState(null);
   const [loadError, setLoadError] = useState("");
-  const { walletState, connectWallet } = useWallet();
+  const { state: walletState, connect } = useWallet();
 
   useEffect(() => {
     if (!id) {
@@ -69,13 +81,12 @@ export function InvoiceDetail({ loadInvoice = loadInvoiceById }) {
 
   const handleFund = () => {
     if (walletState === WALLET_STATES.DISCONNECTED) {
-      connectWallet();
+      connect();
     }
   };
 
   const isFundingDisabled =
-    walletState === WALLET_STATES.CONNECTING ||
-    walletState === WALLET_STATES.NO_WALLET;
+    walletState === WALLET_STATES.CONNECTING || walletState === WALLET_STATES.NO_WALLET;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -99,9 +110,7 @@ export function InvoiceDetail({ loadInvoice = loadInvoiceById }) {
         </Link>
 
         <h1 className="text-2xl font-bold mb-2">Invoice details</h1>
-        <p className="text-slate-400 mb-8">
-          Review the invoice terms before funding.
-        </p>
+        <p className="text-slate-400 mb-8">Review the invoice terms before funding.</p>
 
         {loadError ? (
           <ErrorBanner
@@ -118,22 +127,27 @@ export function InvoiceDetail({ loadInvoice = loadInvoiceById }) {
               aria-labelledby="invoice-summary-heading"
               className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 mb-6"
             >
-              <h2
-                id="invoice-summary-heading"
-                className="text-xl font-semibold mb-4"
-              >
+              <h2 id="invoice-summary-heading" className="text-xl font-semibold mb-4">
                 {invoice.issuer}
               </h2>
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
+                  <dt className="text-slate-500">Issuer</dt>
+                  <dd className="text-slate-100">{invoice.issuer}</dd>
+                </div>
+                <div>
                   <dt className="text-slate-500">Amount</dt>
                   <dd className="text-slate-100">
-                    {invoice.currency} {invoice.amount}
+                    {formatCurrency(invoice.amount, {
+                      currency: invoice.currency,
+                    })}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-slate-500">Estimated yield</dt>
-                  <dd className="text-slate-100">{invoice.yield}</dd>
+                  <dd className="text-slate-100">
+                    {formatYield(invoice.yield)}
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-slate-500">Maturity date</dt>
@@ -141,7 +155,9 @@ export function InvoiceDetail({ loadInvoice = loadInvoiceById }) {
                 </div>
                 <div>
                   <dt className="text-slate-500">Status</dt>
-                  <dd className="text-slate-100">{invoice.status}</dd>
+                  <dd className="text-slate-100">
+                    <StatusPill status={invoice.status ?? ""} />
+                  </dd>
                 </div>
               </dl>
             </section>
@@ -157,9 +173,9 @@ export function InvoiceDetail({ loadInvoice = loadInvoiceById }) {
             </button>
 
             <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900/30 p-4 text-sm text-slate-300">
-              Note: Yield references are educational only and reflect on-chain
-              basis-point assumptions. Invoice contracts settle at maturity.
-              Funding commits principal and is subject to wallet approval.
+              Note: Yield references are educational only and reflect on-chain basis-point
+              assumptions. Invoice contracts settle at maturity. Funding commits principal and is
+              subject to wallet approval.
             </div>
           </>
         )}

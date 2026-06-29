@@ -9,13 +9,15 @@ This document explains how the LiquiFact frontend communicates with the Express 
 The frontend determines the backend API URL using the `NEXT_PUBLIC_API_URL` environment variable.
 
 Example configuration in local development:
+
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
 
 In the codebase, this is typically read as follows:
+
 ```javascript
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 fetch(`${API_URL}/health`);
 ```
 
@@ -34,6 +36,7 @@ This document focuses on the HTTP payloads, endpoint contracts, and data models 
 The endpoints listed in this section reflect the existing code paths that are actively used in the frontend application today.
 
 ### Health Check
+
 > Status: Implemented Today
 
 **Method:** `GET /health`
@@ -41,11 +44,13 @@ The endpoints listed in this section reflect the existing code paths that are ac
 **Purpose:** Validate backend availability. This is currently invoked on the homepage to display the API status.
 
 **Example request:**
+
 ```http
 GET /health
 ```
 
 **Example success response:**
+
 ```json
 {
   "status": "ok"
@@ -53,6 +58,7 @@ GET /health
 ```
 
 ### Upload Invoice
+
 > Status: Implemented Today
 
 **Method:** `POST /invoices`
@@ -60,18 +66,23 @@ GET /health
 **Purpose:** Upload and queue an invoice file for tokenization. This is actively used in the `UploadZone` component.
 
 **Request:**
+
 ```http
 Content-Type: multipart/form-data
 ```
+
 **Fields:**
+
 - `invoice`: `<invoice document (PDF)>`
 
 **Example using curl:**
+
 ```bash
 curl -X POST -F "invoice=@invoice.pdf" http://localhost:3001/invoices
 ```
 
 **Example success response:**
+
 ```json
 {
   "message": "Upload successful",
@@ -81,11 +92,32 @@ curl -X POST -F "invoice=@invoice.pdf" http://localhost:3001/invoices
 
 ---
 
+## Mock Data Wiring
+
+The frontend currently uses mock invoice data during development. The fixtures are defined in `app/invest/lib.js` which populates the global `window.__TEST_MOCK_INVOICES__` array. This array is consumed by the investment marketplace components to render invoices without a real backend. The `UploadZone.jsx` component posts to `${API_URL}/invoices`, but the response is simulated by the mock layer.
+
+### Source
+
+- **Fixture source**: `app/invest/lib.js` defines `window.__TEST_MOCK_INVOICES__`.
+- **Health helper**: `lib/api/health.js` provides a real fetch wrapper for the health check.
+
+### Consumption
+
+- Components import the mock via `import '@/app/invest/lib'` which populates the global variable.
+- The mock is used in the investment marketplace pages to display invoice listings.
+
+### Environment Hook
+
+- The mock is activated when `NEXT_PUBLIC_API_URL` points to the default `http://localhost:3001` and no real backend is reachable.
+
+---
+
 ## Invoice Resource Contract
 
 The canonical invoice object used in the frontend UI requires the following shape to render correctly in the investment marketplace.
 
 **Canonical object example:**
+
 ```json
 {
   "id": "inv-001",
@@ -100,17 +132,17 @@ The canonical invoice object used in the frontend UI requires the following shap
 
 **Field Details:**
 
-| Field | Type | Required | Description |
-|--------|------|----------|-------------|
-| `id` | String | Yes | Unique identifier for the invoice |
-| `issuer` | String | Yes | Name of the issuing entity |
-| `amount` | String/Numeric | Yes | The invoice amount (formatted string with commas in mock, can adapt to numeric in future) |
-| `currency` | String | Yes | ISO currency code (e.g., USD, EUR) |
-| `dueDate` | String | Yes | Maturity date in ISO-8601 format (YYYY-MM-DD) |
-| `yield` | String/Numeric | Yes | Estimated yield percentage |
-| `status` | String | Yes | Current state of the invoice. Documented value in UI mock: "Open" |
+| Field      | Type           | Required | Description                                                                               |
+| ---------- | -------------- | -------- | ----------------------------------------------------------------------------------------- |
+| `id`       | String         | Yes      | Unique identifier for the invoice                                                         |
+| `issuer`   | String         | Yes      | Name of the issuing entity                                                                |
+| `amount`   | String/Numeric | Yes      | The invoice amount (formatted string with commas in mock, can adapt to numeric in future) |
+| `currency` | String         | Yes      | ISO currency code (e.g., USD, EUR)                                                        |
+| `dueDate`  | String         | Yes      | Maturity date in ISO-8601 format (YYYY-MM-DD)                                             |
+| `yield`    | String/Numeric | Yes      | Estimated yield percentage                                                                |
+| `status`   | String         | Yes      | Current state of the invoice. Documented value in UI mock: "Open"                         |
 
-*Note: The frontend currently renders the `amount` and `yield` as strings, but a robust API integration should ideally provide these as numbers (e.g. `amount: 12500`, `yield: 8.2`) leaving formatting to the frontend presentation layer. For now, strings are shown based on the current mocked state.*
+_Note: The frontend currently renders the `amount` and `yield` as strings, but a robust API integration should ideally provide these as numbers (e.g. `amount: 12500`, `yield: 8.2`) leaving formatting to the frontend presentation layer. For now, strings are shown based on the current mocked state._
 
 ---
 
@@ -119,6 +151,7 @@ The canonical invoice object used in the frontend UI requires the following shap
 These endpoints are **not** fully wired into the frontend today but represent the expected integration contract for the marketplace and invoice listings.
 
 ### Retrieve Invoices
+
 > Status: Planned Future Integration
 
 **Method:** `GET /invoices`
@@ -128,11 +161,13 @@ These endpoints are **not** fully wired into the frontend today but represent th
 **Query params:** Reference [FILTER_CONTRACTS.md](../FILTER_CONTRACTS.md) for supported filter and sort parameters.
 
 **Example request:**
+
 ```http
 GET /invoices?status=Open&page=1
 ```
 
 **Example success response:**
+
 ```json
 {
   "data": [
@@ -154,6 +189,7 @@ GET /invoices?status=Open&page=1
 ```
 
 ### Retrieve Single Invoice
+
 > Status: Planned Future Integration
 
 **Method:** `GET /invoices/:id`
@@ -161,11 +197,13 @@ GET /invoices?status=Open&page=1
 **Purpose:** Retrieve details for a single invoice.
 
 **Example request:**
+
 ```http
 GET /invoices/inv-001
 ```
 
 **Example success response:**
+
 ```json
 {
   "data": {
@@ -200,6 +238,7 @@ APIs should return error responses matching the following structure:
 ```
 
 **Optional Validation Error Shape:**
+
 ```json
 {
   "error": {
@@ -211,20 +250,21 @@ APIs should return error responses matching the following structure:
   }
 }
 ```
-*(Alternatively, simple `{"message": "Upload failed"}` is supported for compatibility with current `UploadZone` logic.)*
+
+_(Alternatively, simple `{"message": "Upload failed"}` is supported for compatibility with current `UploadZone` logic.)_
 
 ### HTTP Status Codes
 
-| HTTP Status | Meaning | Frontend Behavior |
-|-------------|---------|-------------------|
-| `400` | Bad Request / Validation | Show validation details or standard error message |
-| `401` | Unauthorized | Prompt login or wallet connection |
-| `403` | Forbidden | Show access denied message |
-| `404` | Not Found | Show not found state |
-| `422` | Unprocessable Entity | Highlight invalid fields (e.g., in upload forms) |
-| `429` | Too Many Requests | Show rate limit warning, encourage retry later |
-| `500` | Internal Server Error | Show generic failure message |
-| `503` | Service Unavailable | Show temporary outage message |
+| HTTP Status | Meaning                  | Frontend Behavior                                 |
+| ----------- | ------------------------ | ------------------------------------------------- |
+| `400`       | Bad Request / Validation | Show validation details or standard error message |
+| `401`       | Unauthorized             | Prompt login or wallet connection                 |
+| `403`       | Forbidden                | Show access denied message                        |
+| `404`       | Not Found                | Show not found state                              |
+| `422`       | Unprocessable Entity     | Highlight invalid fields (e.g., in upload forms)  |
+| `429`       | Too Many Requests        | Show rate limit warning, encourage retry later    |
+| `500`       | Internal Server Error    | Show generic failure message                      |
+| `503`       | Service Unavailable      | Show temporary outage message                     |
 
 ### Frontend Error Surfacing Guidance
 
@@ -246,9 +286,24 @@ Handling network-level and unpredictable failures is critical to maintaining a r
 
 ---
 
+## Payload Safety & Truncation Guards
+
+To prevent client-side performance degradation or Denial of Service (DoS) attacks from oversized or deeply nested backend payloads, the frontend uses safety guards in the `lib/format/safeJson` utility module.
+
+### Safe JSON Formatting Utilities
+
+These utilities clean, depth-limit, and truncate data before rendering or parsing:
+
+- **`truncateString(value, maxLength)`**: Limits the character length of a coerced string (default: 2000 characters). If the string exceeds the limit, it is sliced and appended with a `…(truncated)` marker.
+- **`limitDepth(obj, maxDepth)`**: Traverses an object or array and replaces any node nesting deeper than `maxDepth` (default: 5) with `"[Depth limit reached]"`. It also detects circular references and replaces them with `"[Circular]"` to prevent serialization crashes.
+- **`extractKnownFields(obj, fields)`**: Filters an object to only include specified allowed keys (default: `['status', 'message', 'version']`), ignoring other fields.
+- **`safeJsonStringify(obj, options)`**: Wraps the depth limitation, standard serialization, and truncation workflows into a single helper. In case of unexpected serialization errors (e.g. nested BigInts), it gracefully falls back to a plain string representation of the object.
+
+---
+
 ## Contract Version
 
-**Version:** v1.0
-**Last updated:** Documentation Update
+**Version:** v1.1
+**Last updated:** 2026-06-26
 
 This contract reflects the mocked frontend state as of today and sets the baseline for the upcoming full backend integration.

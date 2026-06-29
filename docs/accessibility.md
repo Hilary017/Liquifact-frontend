@@ -6,37 +6,110 @@ LiquiFact Frontend is committed to meeting **WCAG 2.1 AA** accessibility sta
 
 ## Keyboard & Screen‑Reader Patterns
 
-- **Focus Management** – Interactive elements receive a visible focus ring (`outline: 2px solid var(--color-primary)`); focus order follows logical DOM structure.
-- **ARIA Live Regions** – Used in `components/UploadZone.jsx`, `components/WalletStatus.jsx`, and `app/invest/page.js` to announce status updates to assistive technologies.
+- **Focus Management** – Interactive elements receive a visible focus ring (`outline: 2px solid var(--color-primary)`); focus order follows logical DOM structure. The mobile `NavMenu` disclosure moves focus to the first revealed menu link on open and returns focus to the toggle button on close.
+- **ARIA Live Regions** – Used in `components/UploadZone.jsx`, `components/WalletStatus.jsx`, `components/Pagination.jsx` (page mode), and `app/invest/page.js` to announce status updates to assistive technologies.
 - **Landmarks** – Page layouts employ semantic HTML landmarks (`<header>`, `<main>`, `<nav>`, `<footer>`) for easy navigation.
 - **Form Labels** – All form controls include associated `<label>` elements or `aria-label` attributes.
 - **Button Roles** – Buttons are native `<button>` elements; where custom elements are used, `role="button"` and keyboard handlers are added.
+
+### Pagination Announcements (issue #276)
+
+`components/Pagination.jsx` announces page position to screen readers when the caller
+supplies the `page`, `totalPages`, and `pageSize` props (page-based mode).
+
+**Announcement format:**
+
+```
+Page X of Y, showing items A–B
+```
+
+**Implementation details:**
+
+- A single `role="status" aria-live="polite" aria-atomic="true"` region is rendered
+  inside the component and kept visually hidden (`sr-only`).
+- The region is populated only when the `page` prop changes — initial render is skipped
+  using a `useRef` guard so screen readers do not hear an announcement on first mount.
+- The region is **only rendered in page mode** (when `page` and `totalPages` are
+  provided). In load-more mode the region is absent entirely, preventing any conflict with
+  the marketplace list announcer in `app/invest/page.js`.
+
+**Coordination with the marketplace list announcer:**
+
+`app/invest/page.js` owns its own `role="status" aria-live="polite"` region that
+announces load results, filter counts, and load-more updates.  The `Pagination`
+component is used there in load-more mode (no `page` prop), so its announcement region
+is not rendered and the two live regions never compete or produce duplicate output.
+
+Callers that adopt page-based mode should ensure they do not additionally wrap
+`Pagination` in another live region for the same paging event.
 
 ## Automated Accessibility Tests (CI)
 
 - **jest‑axe** is configured in `jest.setup.js` and executed via `npm run test`.
 - CI workflow `.github/workflows/ci.yml` contains a step **"Test Accessibility"** that runs `npm run test:accessibility` (which invokes jest‑axe). Failures cause the build to break, ensuring regressions are caught early.
 
+## WCAG Contrast‑Ratio Harness
+
+`app/globals.contrast-ratio.test.tsx` provides a programmatic WCAG 2.1 AA contrast harness for every documented foreground/background token pairing.
+
+### What it checks
+
+| Pair                            | Foreground token     | Background token  | Threshold        |
+| ------------------------------- | -------------------- | ----------------- | ---------------- |
+| Body text                       | `--color-foreground` | `--color-bg`      | 4.5 : 1 (normal) |
+| Muted text                      | `--color-muted`      | `--color-bg`      | 4.5 : 1 (normal) |
+| Primary on background           | `--color-primary`    | `--color-bg`      | 4.5 : 1 (normal) |
+| Skip‑link (bg on primary)       | `--color-bg`         | `--color-primary` | 4.5 : 1 (normal) |
+| Primary heading (large text)    | `--color-primary`    | `--color-bg`      | 3.0 : 1 (large)  |
+| Muted heading (large text)      | `--color-muted`      | `--color-bg`      | 3.0 : 1 (large)  |
+| Primary focus ring (UI element) | `--color-primary`    | `--color-bg`      | 3.0 : 1 (UI)     |
+
+### How it works
+
+- Token hex values are read directly from `app/globals.css` using a regex — **no duplicated constants** in the test file.
+- The harness includes the full WCAG 2.1 linearisation and luminance math so it runs in any Node/jsdom environment with no external colour library.
+- A **coverage guard** test enumerates every `--color-*` token defined in `globals.css` and asserts each one appears in at least one `TOKEN_PAIRS` entry. Adding a new colour token without a corresponding pair causes an immediate test failure.
+
+### Adding a new token pairing
+
+1. Add (or update) the `--color-*` variable in `app/globals.css`.
+2. Append an entry to the `TOKEN_PAIRS` array in `app/globals.contrast-ratio.test.tsx`:
+
+```ts
+{
+  name:      'my new pair description',
+  fg:        '--color-new-token',
+  bg:        '--color-bg',
+  threshold: NORMAL_TEXT,   // or LARGE_TEXT / UI_ELEMENT
+  context:   'Where this pairing appears in the UI',
+},
+```
+
+3. Run `npm test` — the coverage guard and pair assertion both run automatically.
+
 ## Known Limitations
 
-| Area | Issue | Reference |
-|------|-------|-----------|
-| Filters | "Soon" filter buttons are disabled and lack focus styles. | `app/invoices/page.js` (TODO comment) |
-| Motion | Reduced‑motion handling is not yet implemented for animated components. | `components/ToastProvider.jsx` |
-| Focus Styles | Some custom SVG icons do not inherit focus outline. | `components/WalletStatus.jsx` |
+| Area         | Issue                                                                   | Reference                             |
+| ------------ | ----------------------------------------------------------------------- | ------------------------------------- |
+| Filters      | "Soon" filter buttons are disabled and lack focus styles.               | `app/invoices/page.js` (TODO comment) |
+| Motion       | Reduced‑motion handling is not yet implemented for animated components. | `components/ToastProvider.jsx`        |
+| Focus Styles | Some custom SVG icons do not inherit focus outline.                     | `components/WalletStatus.jsx`         |
 
 We are actively tracking these items in the repository’s issue tracker and will resolve them in upcoming releases.
 
 ## Contributor Accessibility Checklist
 
 When adding or modifying UI:
+
 - [ ] Use semantic HTML elements and appropriate ARIA attributes.
 - [ ] Ensure every interactive element has a visible focus style.
 - [ ] Verify colour contrast meets **AA** ratios (4.5:1 text, 3:1 large text).
 - [ ] Add `role="status"` or `aria-live="polite"` for dynamic feedback.
 - [ ] Test keyboard navigation (Tab, Shift+Tab, Enter, Space) across the component.
+- [ ] Prefer semantic key/value structures (e.g. `<dl>/<dt>/<dd>`) for assistive-technology friendly “label + value” facts.
 - [ ] Run `npm run test:accessibility` locally and fix any violations.
 - [ ] Document any known accessibility gaps in this statement.
+
 
 ## Maintenance
 
@@ -45,4 +118,4 @@ When adding or modifying UI:
 
 ---
 
-*Last updated: 2026‑06‑24*
+_Last updated: 2026‑06‑28_

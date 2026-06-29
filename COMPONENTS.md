@@ -6,13 +6,71 @@ Shared UI components for the LiquiFact frontend. All components live under `comp
 
 ## Table of Contents
 
+- [EmptyState](#emptystate)
 - [ErrorBanner](#errorbanner)
 - [Footer](#footer)
+- [Hooks](#hooks)
+- [InvoiceList](#invoicelist)
 - [InvoiceListSkeleton](#invoicelistskeleton)
+- [InvoiceSearch](#invoicesearch)
 - [NavMenu](#navmenu)
+- [StatusPill](#statuspill)
+- [ThemeToggle](#themetoggle)
 - [ToastProvider / useToast](#toastprovider--usetoast)
 - [UploadZone](#uploadzone)
 - [WalletStatus](#walletstatus)
+- [Formatting Utilities](#formatting-utilities)
+
+---
+
+## EmptyState
+
+A reusable empty-state panel with an icon slot, heading, description, and an action element. Used whenever a list or page region has no content to show.
+
+**File:** `components/EmptyState.jsx`
+
+### Named exports
+
+| Export                     | Description                                                                         |
+| -------------------------- | ----------------------------------------------------------------------------------- |
+| `default` (`EmptyState`)   | The reusable empty-state container component                                        |
+| `InvoiceEmptyIllustration` | Decorative inline SVG of an empty document tray; always rendered with `aria-hidden` |
+
+### Props (`EmptyState`)
+
+| Prop          | Type        | Default | Description                                                                                        |
+| ------------- | ----------- | ------- | -------------------------------------------------------------------------------------------------- |
+| `title`       | `string`    | —       | **Required.** Heading text shown in the panel (rendered as `<h3>`)                                 |
+| `description` | `string`    | —       | Optional supporting paragraph below the title                                                      |
+| `icon`        | `ReactNode` | —       | Decorative icon or SVG placed above the title. SVGs should include `aria-hidden="true"`            |
+| `action`      | `ReactNode` | —       | CTA element (link or button) rendered below the description                                        |
+| `className`   | `string`    | `''`    | Additional Tailwind classes forwarded to the root `<div>` alongside the component's default styles |
+
+### Accessibility
+
+- The `icon` slot is purely decorative — always pass `aria-hidden="true"` and `focusable="false"` on the SVG.
+- The action element must be a focusable element (`<a>` or `<button>`). Include `focus-visible:outline` classes to meet WCAG 2.1 §2.4.11.
+- The title is rendered as `<h3>` — ensure the surrounding page hierarchy is correct (usually inside a `<section>` headed by `<h2>`).
+
+### Example
+
+```jsx
+import EmptyState, { InvoiceEmptyIllustration } from "@/components/EmptyState";
+
+<EmptyState
+  icon={<InvoiceEmptyIllustration />}
+  title="No invoices yet"
+  description="Upload your first invoice to get started."
+  action={
+    <a
+      href="#invoice-upload-btn"
+      className="rounded-xl border border-cyan-700 bg-cyan-900/30 px-5 py-2.5 text-sm font-semibold text-cyan-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400"
+    >
+      Upload your first invoice
+    </a>
+  }
+/>;
+```
 
 ---
 
@@ -62,12 +120,91 @@ Site footer with navigation links (Docs, System Status, Contact Support). Links 
 
 ### Props
 
-None.
+| Prop    | Type                                                    | Default                          | Description                                                                                                    |
+| ------- | ------------------------------------------------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `links` | `Array<{label:string, href:string, external?:boolean}>` | `undefined` (uses default links) | Optional custom links array. Allows passing internal links (with `external: false`) to render via Next `Link`. |
+
+> **Note:** When `external` is omitted or set to `true`, the link is rendered as a normal `<a>` with `target="_blank"` and `rel="noopener noreferrer"` for security.
 
 ### Example
 
 ```jsx
 <Footer />
+
+// Custom internal link example
+<Footer
+  links={[{ label: 'Home', href: '/', external: false }]}
+/>
+```
+
+---
+
+## InvoiceList
+
+Renders the SME invoice list with loading, empty, and error states. Each card that includes an `issuerAddress` field shows a truncated Stellar address with an inline copy button.
+
+**File:** `components/InvoiceList.jsx`
+
+### Props
+
+| Prop                 | Type       | Default            | Description                                                                |
+| -------------------- | ---------- | ------------------ | -------------------------------------------------------------------------- |
+| `loadInvoices`       | `function` | `loadMockInvoices` | Async loader that resolves to an invoice array                             |
+| `optimisticInvoices` | `array`    | `[]`               | Newly submitted invoices to prepend optimistically before the API responds |
+
+### Invoice object shape
+
+| Field           | Type     | Required | Description                                                        |
+| --------------- | -------- | -------- | ------------------------------------------------------------------ |
+| `id`            | `string` | Yes      | Unique identifier                                                  |
+| `issuer`        | `string` | Yes      | Display name (company name)                                        |
+| `issuerAddress` | `string` | No       | Stellar public key; when present, shown truncated with copy button |
+| `amount`        | `string` | Yes      | Formatted amount string                                            |
+| `currency`      | `string` | Yes      | ISO currency code                                                  |
+| `dueDate`       | `string` | Yes      | ISO-8601 due date                                                  |
+| `yield`         | `string` | Yes      | Estimated yield percentage                                         |
+| `status`        | `string` | Yes      | One of: `Pending tokenization`, `Tokenized`, `Funded`, `Settled`   |
+
+### Copy-issuer-address button
+
+When `invoice.issuerAddress` is set, each card renders:
+
+- A **truncated** address in head/tail form (`GABCDE…34DE`) via `lib/format/truncateAddress.js`
+- A **copy button** that writes the **full** address to the clipboard
+- A **"Copied!"** confirmation that appears for 2 seconds after a successful copy, announced via `aria-live="polite"`
+- A **guarded fallback** using `document.execCommand('copy')` when `navigator.clipboard` is unavailable
+- Clipboard failures are **silent** — no error banner or toast is shown
+
+### Accessibility
+
+- `role="status"` + `aria-live="polite"` on the "Copied!" confirmation region
+- Copy button `aria-label` includes the truncated address and updates to `"Copied!"` on success
+- `title` attribute on the truncated span exposes the full address as a tooltip
+- `aria-label` on the truncated address span reads the full address for screen readers
+- Copy button is `type="button"` to prevent accidental form submission
+
+### Example
+
+```jsx
+import InvoiceList from '@/components/InvoiceList';
+
+// With API loader
+<InvoiceList loadInvoices={fetchInvoicesFromApi} />
+
+// With optimistic invoice after upload
+<InvoiceList
+  loadInvoices={fetchInvoicesFromApi}
+  optimisticInvoices={[{
+    id: 'upload-xyz',
+    issuer: 'My Company',
+    issuerAddress: 'GABCDE1234FGHIJ5678KLMNO9012PQRST3456UVWXY7890ZABC1234DE',
+    amount: 'Pending',
+    currency: 'USD',
+    dueDate: 'Pending',
+    yield: 'Pending',
+    status: 'Pending tokenization',
+  }]}
+/>
 ```
 
 ---
@@ -97,6 +234,48 @@ Animated placeholder list rendered while invoice data is loading. Mirrors the sh
 
 // custom row count
 <InvoiceListSkeleton rows={5} />
+```
+
+---
+
+## InvoiceSearch
+
+Controlled search input for filtering marketplace invoices by issuer name. Styled to match the slate/cyan marketplace theme. A clear button appears when the input has a value.
+
+**File:** `components/InvoiceSearch.jsx`
+
+### Props
+
+| Prop          | Type       | Default                         | Description                                      |
+| ------------- | ---------- | ------------------------------- | ------------------------------------------------ |
+| `value`       | `string`   | —                               | Current search query (controlled by parent)      |
+| `onChange`    | `function` | —                               | Called with the new value on every keystroke     |
+| `placeholder` | `string`   | `"Search issuer… (press /)"`    | Placeholder text; override to hide shortcut hint |
+
+### Keyboard shortcut
+
+Press **`/`** anywhere on the page to move focus to the search input. The shortcut is ignored when focus is already inside an `input`, `textarea`, or `contenteditable` element so typing elsewhere is never intercepted.
+
+The default placeholder includes a visible `(press /)` hint for discoverability.
+
+### Accessibility
+
+- Labelled via a `sr-only` `<label>` linked to the input with `htmlFor` / `id`.
+- The global shortcut does not trap or hijack keystrokes in editable fields.
+- Modifier combinations (`Ctrl+/`, `Meta+/`, `Alt+/`) are ignored to avoid conflicting with browser shortcuts.
+
+### Example
+
+```jsx
+import InvoiceSearch from "@/components/InvoiceSearch";
+
+function MarketplaceFilters() {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  return (
+    <InvoiceSearch value={searchQuery} onChange={setSearchQuery} />
+  );
+}
 ```
 
 ---
@@ -211,6 +390,7 @@ None — API endpoint is read from `NEXT_PUBLIC_API_URL` (falls back to `http://
 
 | Export             | Description                                                     |
 | ------------------ | --------------------------------------------------------------- |
+| `MAX_UPLOAD_BYTES` | Numeric constant limiting file size to 10 MB (in bytes)         |
 | `FILE_CONSTRAINTS` | Object with `accept`, `mimeType`, `maxSizeMb`, `maxSizeBytes`   |
 | `Spinner`          | Small inline SVG spinner used internally; re-exported for reuse |
 
@@ -226,7 +406,7 @@ None — API endpoint is read from `NEXT_PUBLIC_API_URL` (falls back to `http://
 ### Validation rules
 
 - **Type:** only `application/pdf` accepted; any other MIME type is rejected.
-- **Size:** file must be ≤ 10 MB.
+- **Size:** file must be ≤ 10 MB (`MAX_UPLOAD_BYTES`). Validation is checked immediately upon file selection via `FILE_CONSTRAINTS`, and additionally enforced before the network `fetch` is triggered to ensure safety.
 
 ### Accessibility
 
@@ -257,6 +437,23 @@ export default function InvoicePage() {
 Stellar wallet connection UI. Shows a status indicator dot, wallet address / helper text, and an action button whose label adapts to the current connection state.
 
 **File:** `components/WalletStatus.jsx`
+
+---
+
+## Formatting Utilities
+
+Locale-aware numeric formatting helpers for invoice amounts, currencies, and yield values.
+
+**File:** `lib/format/currency.js`
+
+### Exports
+
+| Export           | Description                                                                    |
+| ---------------- | ------------------------------------------------------------------------------ |
+| `formatCurrency` | Formats a numeric value with `Intl.NumberFormat` currency style. Accepts `{ currency, locale }`. |
+| `formatAmount`   | Formats a numeric amount with grouping and no currency symbol.                 |
+
+Both helpers return a safe fallback (`—`) for `null`, `undefined`, `NaN`, empty strings, and non-numeric strings. Use them when rendering invoice principal, marketplace card amounts, and numeric yield text so values remain locale-aware and screen-reader friendly without injecting unescaped HTML.
 
 > **Note:** Wallet connection is currently mocked for UI development. Replace the `connectWallet` internals with real Freighter / wallet-kit calls when integrating. See [WALLET_INTEGRATION_CONTRACT.md](WALLET_INTEGRATION_CONTRACT.md).
 
@@ -298,13 +495,221 @@ import WalletStatus from "@/components/WalletStatus";
 
 ---
 
+## StatusPill
+
+The single source of truth for rendering an invoice-status badge. Used on the marketplace card (`InvoiceCard`) and the detail `dl` so label, tone, and accessibility metadata stay in lock-step across both surfaces.
+
+**File:** `components/StatusPill.jsx`
+
+### Status vocabulary
+
+The exhaustive set of invoice-status values lives in `lib/types/invoice.js`:
+
+| Constant                   | Value       | Label rendered        | Tone (Tailwind)                                  |
+| -------------------------- | ----------- | --------------------- | ------------------------------------------------ |
+| `INVOICE_STATUSES.OPEN`    | `"Open"`    | `Open`                | cyan (`bg-cyan-900/40 text-cyan-300`)            |
+| `INVOICE_STATUSES.FUNDED`  | `"Funded"`  | `Funded`              | muted slate (`bg-slate-700/40 text-slate-400`)   |
+| `INVOICE_STATUSES.SETTLED` | `"Settled"` | `Settled`             | emerald (`bg-emerald-900/30 text-emerald-300`)   |
+| `INVOICE_STATUSES.OVERDUE` | `"Overdue"` | `Overdue by maturity` | amber (`bg-amber-900/40 text-amber-300`)         |
+| _(none — fallback)_        | `null`      | `Unknown`             | neutral slate (`bg-slate-800/60 text-slate-400`) |
+
+`INVOICE_STATUSES` and `STATUS_PILL_MAP` are both `Object.freeze`-immutable so the canonical vocabulary cannot drift at runtime.
+
+### Props
+
+| Prop        | Type      | Default | Description                                                                                                                |
+| ----------- | --------- | ------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `status`    | `unknown` | —       | Any invoice status value. Strings outside `INVOICE_STATUSES` (and all nullish / non-string inputs) fall back to `Unknown`. |
+| `className` | `string`  | `""`    | Optional Tailwind classes appended to the tone classes. Layout-spacing only; never override tone colours.                  |
+
+### Behaviour
+
+- Reads `INVOICE_STATUSES` and `STATUS_PILL_MAP` from `lib/types/invoice.js` — the only place to add a new status is to update **all three** tables (the enum, the map entry, and this contract).
+- Always renders a visible pill. **Unknown / nullish / empty input → `Unknown`** neutral pill, never throws, never renders the raw input, never renders an empty `<span>`.
+- The rendered `<span>` carries a `data-status` attribute whose value is the canonical key (`"Open" | "Funded" | "Settled" | "Overdue" | "Unknown"`). Use this for tests and `InvoiceCard` wiring.
+- Purely presentational — never a `<button>`, never focusable.
+
+### Accessibility
+
+- `role="status"` so screen readers announce state changes.
+- `aria-label` reads `"Status: <label>"` — the same word rendered inside the pill. **Colour is never load-bearing.**
+- Status is conveyed by **text**, not by colour alone, satisfying WCAG 2.1 §1.4.1 (Use of Color).
+
+### Example
+
+```jsx
+import StatusPill from '@/components/StatusPill';
+
+// Marketplace card
+<StatusPill status={invoice.status} />
+
+// Detail page definition list
+<dl>
+  <dt>Status</dt>
+  <dd><StatusPill status={invoice.status} /></dd>
+</dl>
+
+// Neutral fallback (null, undefined, unknown strings, etc.)
+<StatusPill status={null} />             // → "Unknown" pill
+<StatusPill status="legacy-available" /> // → "Unknown" pill
+```
+
+---
+
+## ThemeToggle
+
+A button that cycles through **light → dark → system** theme preferences, persists the choice to `localStorage`, and applies a `data-theme` attribute on `<html>` so CSS tokens update instantly.
+
+**File:** `components/ThemeToggle.jsx`
+
+### Named exports
+
+| Export                    | Description                                                                              |
+| ------------------------- | ---------------------------------------------------------------------------------------- |
+| `default` (`ThemeToggle`) | The toggle button component                                                              |
+| `THEMES`                  | `['light', 'dark', 'system']` — the ordered cycle                                        |
+| `THEME_STORAGE_KEY`       | `localStorage` key used to persist the preference                                        |
+| `resolveTheme(pref)`      | Maps a preference string to `'light'` or `'dark'` (resolves `'system'` via `matchMedia`) |
+| `readStoredTheme()`       | Reads from `localStorage`, returning `'system'` as fallback                              |
+| `applyTheme(pref)`        | Sets `data-theme` on `document.documentElement`                                          |
+
+### Props
+
+| Prop        | Type     | Default | Description                                    |
+| ----------- | -------- | ------- | ---------------------------------------------- |
+| `className` | `string` | `''`    | Extra classes forwarded to the root `<button>` |
+
+### How it works
+
+1. **Pre-paint inline script** in `app/layout.js` reads `localStorage` before React hydrates and sets `data-theme` on `<html>` via `dangerouslySetInnerHTML`. This eliminates the flash of incorrect theme on first load.
+2. **On mount**, the component reads the stored preference and syncs React state.
+3. **On click**, cycles `system → light → dark → system`, writes to `localStorage`, and calls `applyTheme`.
+4. **OS change listener**: when preference is `'system'`, a `matchMedia` listener re-applies the theme if the user toggles their OS setting.
+
+### Theme cycle
+
+```
+system (monitor icon)  →  light (sun icon)  →  dark (moon icon)  →  system …
+```
+
+### Accessibility
+
+- `aria-label` describes the **current** theme and the next option (e.g. `"Theme: Dark (click for System)"`).
+- `aria-pressed` is `true` for explicit `light`/`dark` choices and `false` for `system`.
+- All SVG icons carry `aria-hidden="true"` and `focusable="false"`.
+- Button has `id="theme-toggle"` for automated testing and skip-link targeting.
+- Keyboard-focusable with `focus-visible:outline` following the site ring pattern.
+
+### CSS tokens consumed
+
+| Token             | Dark (`[data-theme="dark"]`) | Light (`[data-theme="light"]`) |
+| ----------------- | ---------------------------- | ------------------------------ |
+| `--color-bg`      | `#020617` (slate-950)        | `#f8fafc` (slate-50)           |
+| `--color-fg`      | `#f1f5f9` (slate-100)        | `#0f172a` (slate-900)          |
+| `--color-muted`   | `#94a3b8` (slate-400)        | `#64748b` (slate-500)          |
+| `--color-surface` | `#0f172a` (slate-900)        | `#ffffff` (white)              |
+| `--color-border`  | `#1e293b` (slate-800)        | `#e2e8f0` (slate-200)          |
+| `--color-primary` | `#22d3ee` (cyan-400)         | `#0891b2` (cyan-600)           |
+
+### Example
+
+```jsx
+import ThemeToggle from '@/components/ThemeToggle';
+
+// Renders inside any layout — no provider required
+<ThemeToggle />
+
+// With extra positioning class
+<ThemeToggle className="ml-4" />
+```
+
+---
+
+## Hooks
+
+Reusable React hooks that live under `lib/hooks/`. Hooks are the canonical home for shared persistence and behaviour so any feature can adopt the same contract without re-implementing edge cases (SSR safety, quota errors, type preservation).
+
+### `useLocalStorage`
+
+A drop-in `useState`-shaped hook for `window.localStorage` with **SSR-safe hydration**, **JSON parse guarding**, and **quota/SecurityError guarding**. The single shared implementation that wallet / preferences / any future persistable feature must consume.
+
+**File:** `lib/hooks/useLocalStorage.js`
+
+#### Signature
+
+```jsx
+const [value, setValue] = useLocalStorage < T > (key, defaultValue);
+```
+
+| Argument         | Type                               | Description                                                                         |
+| ---------------- | ---------------------------------- | ----------------------------------------------------------------------------------- |
+| `key`            | `string`                           | Required. Storage key. Empty / non-string keys are defensive-no-ops (no throw).     |
+| `defaultValue`   | `T \| (() => T)`                   | Initial value or lazy initialiser. Returned on the very first render.               |
+| Returns value    | `T`                                | Current state. Defaults to `defaultValue` on first render, then rehydrates.         |
+| Returns setValue | `(next \| (prev) => next) => void` | Stable setter. Accepts either a value or a functional updater (mirrors `useState`). |
+
+#### SSR-safety contract
+
+- **Initial render never reads from storage.** Whatever `defaultValue` is, that is what every consumer sees on first render (server-side and the first client render). This is the rule that keeps React hydration safe in a Next.js app router context.
+- The actual read happens inside `useEffect`, after the component mounts on the client. JSON-parse failures, missing entries, and `localStorage.getItem` itself throwing (e.g. private-browsing SecurityError) are **all swallowed** — the hook falls back to `defaultValue` so React never sees an exception.
+- `setValue` does not access `window` at module scope or during render; the window check sits inside the setter callback so the rule is enforced on every write.
+
+#### Write-through contract
+
+- `setValue(next)` writes `JSON.stringify(next)` to `localStorage` AND updates React state in lock-step. **Quota errors and SecurityError are swallowed** so the UI keeps working even when the browser refuses the write — React state still updates so the in-memory value is correct.
+- `setValue(prev => next)` is the canonical functional updater form. Sequential calls inside `act()` correctly accumulate.
+- `setValue(undefined)` removes the storage key (`removeItem`) and leaves React state at `undefined`. This is the React idiom for "unset"; no other value triggers a removal.
+
+#### Stability
+
+- The setter is referentially stable across renders when `key` does not change. Safe to put in dependency arrays.
+- Changing `key` mid-lifecycle triggers a re-read from `localStorage` for the new key.
+
+#### Caveats (intentional non-features)
+
+- **No auto-rehydration after mount.** Within the same tab, two `useLocalStorage('key', …)` instances do **not** auto-sync each other's writes — each one rehydrates only when it first mounts (initial render → mount effect) or when its `key` prop changes. Consumers that need shared-state semantics across many components should centralise through React Context on top of this hook.
+- **No cross-tab sync.** A write in tab A does not auto-propagate to tab B. The pre-paint inline script in `app/layout.js` (theme toggle) handles initial-paint sync; live cross-tab sync is out of scope.
+- **No automatic debouncing.** Rapid `setValue` calls produce one `setItem` per call. The setter is cheap, but consumers that need debouncing should layer it on top (typical for text inputs).
+- **Stored value types must round-trip through JSON.** Functions, classes, and other non-serialisable values will not survive a round-trip. Compose with a serialisation layer if you need that.
+
+#### Example
+
+```jsx
+'use client';
+
+import { useLocalStorage } from '@/lib/hooks/useLocalStorage';
+
+// Primitive — typed default surfaces string.
+const [theme, setTheme] = useLocalStorage<'light' | 'dark' | 'system'>(
+  'lhf:theme',
+  'system',
+);
+
+// Object — generic preserves the shape.
+const [wallet, setWallet] = useLocalStorage<{ address?: string; network?: string }>(
+  'lhf:wallet-snapshot',
+  {},
+);
+
+// Functional updater.
+setWallet((prev) => ({ ...prev, network: 'PUBLIC' }));
+
+// Reset.
+setWallet(undefined);
+```
+
+---
+
 ## Design tokens
 
-Global tokens defined in `app/globals.css` and used across all components.
+Global tokens defined in `app/globals.css` and driven by the `[data-theme]` attribute (set by `ThemeToggle`).
 
-| Token             | Value     | Tailwind equivalent |
-| ----------------- | --------- | ------------------- |
-| `--color-bg`      | `#0f0f0f` | `slate-950`         |
-| `--color-primary` | `#06b6d4` | `cyan-400`          |
+| Token             | Dark value          | Light value         |
+| ----------------- | ------------------- | ------------------- |
+| `--color-bg`      | `#020617` slate-950 | `#f8fafc` slate-50  |
+| `--color-fg`      | `#f1f5f9` slate-100 | `#0f172a` slate-900 |
+| `--color-primary` | `#22d3ee` cyan-400  | `#0891b2` cyan-600  |
 
-Font: **Geist** via `@fontsource/geist`. Headings use `font-bold`; body copy uses the default weight.
+Dark is the `:root` default (backwards-compatible). Light overrides activate via `[data-theme="light"]`.
+
+Font: **Geist** via `next/font/google`. Headings use `font-bold`; body copy uses the default weight.

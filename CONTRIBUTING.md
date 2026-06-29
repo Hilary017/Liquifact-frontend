@@ -44,6 +44,15 @@ npm run build
 
 CI currently runs `npm ci`, `npm run lint`, and `npm test --silent` on pull requests to `main`. Run `npm run build` locally for UI or routing changes because the build command is part of the documented workflow even when a PR only changes a small surface.
 
+## Formatting
+
+The project uses **Prettier** to enforce a consistent code style.
+
+- Run `npm run format` to reformat the entire codebase.
+- CI includes a `format:check` step (`npm run format:check`) that fails if any file is not properly formatted.
+- The configuration lives in `.prettierrc` and `.prettierignore`.
+- This gate ensures that all contributions adhere to the same style before merging.
+
 ## Testing and Accessibility
 
 The repo uses Jest, React Testing Library, `@testing-library/user-event`, and `jest-axe` for component and accessibility checks.

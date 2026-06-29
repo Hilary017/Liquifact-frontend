@@ -12,9 +12,7 @@ function setup() {
 function renderWithProviders(ui) {
   return render(
     <ToastProvider>
-      <WalletProvider>
-        {ui}
-      </WalletProvider>
+      <WalletProvider>{ui}</WalletProvider>
     </ToastProvider>,
   );
 }
@@ -29,6 +27,9 @@ async function flushTimers(delayMs) {
 describe("WalletStatus", () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    if (typeof window !== "undefined") {
+      window.localStorage.clear();
+    }
   });
 
   afterEach(async () => {
@@ -42,9 +43,11 @@ describe("WalletStatus", () => {
   it("renders the initial disconnected state", () => {
     renderWithProviders(<WalletStatus />);
 
-    expect(screen.getByRole("button", { name: /connect wallet/i })).toBeInTheDocument();
     expect(
-      screen.getByText(/connect your stellar wallet/i, { selector: "span" }),
+      screen.getByRole("button", { name: /connect wallet/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/connect your stellar wallet/i, { selector: "span" })
     ).toBeInTheDocument();
   });
 
@@ -60,8 +63,12 @@ describe("WalletStatus", () => {
 
     await flushTimers(1500);
 
-    expect(screen.getByText(/1,234\.56 XLM/, { selector: "span" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /disconnect/i })).toBeInTheDocument();
+    expect(
+      screen.getByText(/1,234\.56 XLM/, { selector: "span" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /disconnect/i }),
+    ).toBeInTheDocument();
   });
 
   it("disconnects the wallet when the disconnect button is clicked", async () => {
@@ -69,14 +76,20 @@ describe("WalletStatus", () => {
     jest.spyOn(Math, "random").mockReturnValue(0); // success scenario
 
     renderWithProviders(<WalletStatus />);
-    const connectButton = screen.getByRole("button", { name: /connect wallet/i });
+    const connectButton = screen.getByRole("button", {
+      name: /connect wallet/i,
+    });
     await user.click(connectButton);
     await flushTimers(1500);
 
-    const disconnectButton = screen.getByRole("button", { name: /disconnect/i });
+    const disconnectButton = screen.getByRole("button", {
+      name: /disconnect/i,
+    });
     await user.click(disconnectButton);
 
-    expect(screen.getByRole("button", { name: /connect wallet/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /connect wallet/i }),
+    ).toBeInTheDocument();
   });
 
   it("shows an error state and allows retry", async () => {
@@ -88,7 +101,9 @@ describe("WalletStatus", () => {
     await user.click(button);
     await flushTimers(1500);
 
-    expect(screen.getByRole("button", { name: /retry connection/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /retry connection/i }),
+    ).toBeInTheDocument();
   });
 
   it("shows a wrong network state and allows retry", async () => {
@@ -100,7 +115,9 @@ describe("WalletStatus", () => {
     await user.click(button);
     await flushTimers(1500);
 
-    expect(screen.getByRole("button", { name: /switch network/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /switch network/i }),
+    ).toBeInTheDocument();
   });
 
   it("shows a no-wallet state and opens the wallet installation page", async () => {
@@ -113,9 +130,14 @@ describe("WalletStatus", () => {
     await user.click(button);
     await flushTimers(1500);
 
-    const installButton = screen.getByRole("button", { name: /install wallet/i });
+    const installButton = screen.getByRole("button", {
+      name: /install wallet/i,
+    });
     await user.click(installButton);
-    expect(openSpy).toHaveBeenCalledWith("https://www.stellar.org/wallets", "_blank");
+    expect(openSpy).toHaveBeenCalledWith(
+      "https://www.stellar.org/wallets",
+      "_blank",
+    );
 
     openSpy.mockRestore();
   });
