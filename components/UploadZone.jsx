@@ -255,7 +255,7 @@ function UploadZone() {
         disabled={!file || isProcessing}
         aria-disabled={!file || isProcessing}
         className="mt-4 w-full rounded-xl bg-cyan-500 py-3 text-sm font-semibold text-slate-950 transition-all duration-200
-          hover:bg-cyan-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400
+          hover:bg-cyan-400 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-cyan-400
           disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {status === 'uploading' && (
